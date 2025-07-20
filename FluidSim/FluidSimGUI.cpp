@@ -180,6 +180,19 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             case IDM_EXIT:
                 DestroyWindow(hWnd);
                 break;
+            case IDM_DATABASE:
+                {
+                    // Open the database dialog or perform database operations
+                    // This is a placeholder for actual database handling code
+                    MessageBox(hWnd, L"Database functionality not implemented yet.", L"Info", MB_OK | MB_ICONINFORMATION);
+		  }
+			 break;
+            case IDM_HOME:
+                {
+                    // Handle home action, e.g., reset the simulation or show home screen
+                    MessageBox(hWnd, L"Home action not implemented yet.", L"Info", MB_OK | MB_ICONINFORMATION);
+                }
+			 break;
             default:
                 return DefWindowProc(hWnd, message, wParam, lParam);
             }

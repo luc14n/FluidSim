@@ -37,6 +37,26 @@ public:
     // --- StandardSimulationConfigs table ---
 
     /**
+     * @brief Map of simulation parameter names and values for the SimulationConfigs table.
+     *
+     * The map should contain the following keys (all values as strings):
+     * - "ConfigID"                : Unique identifier for the configuration (integer, as string)
+     * - "Name"                    : Name of the simulation configuration
+     * - "GridSize"                : Grid size (e.g., "100x100" or similar)
+     * - "ParticleCount"           : Number of particles (integer, as string)
+     * - "InflowParamsJSON"        : Inflow parameters in JSON format
+     * - "OutflowParamsJSON"       : Outflow parameters in JSON format
+     * - "Timestep"                : Simulation timestep (floating-point, as string)
+     * - "MethodOfComputation"     : Description or code for the computation method
+     * - "FluidID"                 : ID of the fluid type used (integer, as string)
+     * - "Description"             : Description of the configuration
+     * - "IsStandard"              : Whether this is a standard config (0 or 1, as string)
+     * - "OtherParamsJSON"         : Additional parameters in JSON format
+     *
+     * @note All values must be convertible to the correct type as required by the database schema.
+     */
+
+    /**
      * @brief Saves simulation parameters to the SimulationConfigs table.
      * @param parameters Map of parameter names and values.
      * @return True if the operation was successful, false otherwise.
@@ -60,6 +80,21 @@ public:
     bool updateSimulationParameters(const int ConfigID, std::map<std::string, std::string>& parameters);
 
     // --- TypesOfLiquids table ---
+
+    /**
+     * @brief Map of liquid property names and values for the TypesOfLiquids table.
+     *
+     * The map should contain the following keys (all values as strings):
+     * - "LiquidID"                    : Unique identifier for the liquid (integer, as string)
+     * - "Name"                        : Name of the liquid
+     * - "Density"                     : Density of the liquid (floating-point, as string)
+     * - "Viscosity"                   : Viscosity of the liquid (floating-point, as string)
+     * - "Color"                       : Color of the liquid (as a string)
+     * - "Description"                 : Description of the liquid
+     * - "OtherPhysicalPropertiesJSON" : Additional properties in JSON format
+     *
+     * @note All values must be convertible to the correct type as required by the database schema.
+     */
 
     /**
      * @brief Saves a new liquid type to the TypesOfLiquids table.
@@ -92,6 +127,24 @@ public:
     bool updateLiquidType(int liquidID, std::map<std::string, std::string>& liquidData);
 
     // --- SavedSimulations table ---
+
+    /**
+     * @brief Map of simulation result property names and values for the SavedSimulations table.
+     *
+     * The map should contain the following keys (all values as strings):
+     * - "SimulationID"        : Unique identifier for the simulation (integer, as string)
+     * - "ConfigID"            : Configuration ID used for the simulation (integer, as string)
+     * - "DateTime"            : Date and time of the simulation
+     * - "ResultFilePath"      : Path to the result file
+     * - "Duration"            : Duration of the simulation (floating-point, as string)
+     * - "Notes"               : Additional notes
+     * - "User"                : User who ran the simulation
+     * - "Seed"                : Random seed used (integer, as string)
+     * - "Version"             : Application version
+     * - "OtherMetadataJSON"   : Additional metadata in JSON format
+     *
+     * @note All values must be convertible to the correct type as required by the database schema.
+     */
 
     /**
      * @brief Saves a simulation result to the SavedSimulations table.
