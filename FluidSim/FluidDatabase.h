@@ -4,37 +4,131 @@
 #include <map>
 #include <iostream>
 
+/**
+ * @brief Handles all database operations for the FluidSim application.
+ *
+ * This class provides methods to open, close, and interact with the simulation database,
+ * including saving/loading simulation parameters, liquid types, and simulation results.
+ */
 class FluidDatabase {
 public:
-	FluidDatabase(const std::string& dbPath);
-	~FluidDatabase();
+    /**
+     * @brief Constructs a FluidDatabase object with the given database file path.
+     * @param dbPath Path to the SQLite database file.
+     */
+    FluidDatabase(const std::string& dbPath);
 
-	bool open();
-	void close();
-	// Methods for saving/aloading fluid types, simulation states, etc.
+    /**
+     * @brief Destructor. Closes the database connection if open.
+     */
+    ~FluidDatabase();
 
-	// Methods for StandardSimulationConfigs table
-	bool saveSimulationParameters(const std::map<std::string, std::string>& parameters);
-	bool loadSimulationParameters(const int ConfigID, std::map<std::string, std::string>& parameters);
-	bool updateSimulationParameters(const int ConfigID, std::map<std::string, std::string>& parameters);
+    /**
+     * @brief Opens the database connection.
+     * @return True if the connection was successful, false otherwise.
+     */
+    bool open();
 
-	// Methods for TypesOfLiquids table
-	bool saveLiquidType(const std::string& name, double density, double viscosity,
-	                    const std::string& color, const std::string& description,
-	                    const std::string& otherPhysicalPropertiesJSON);
-	bool loadLiquidType(int liquidID, std::map<std::string, std::string>& liquidData);
-	bool updateLiquidType(int liquidID, std::map<std::string, std::string>& liquidData);
+    /**
+     * @brief Closes the database connection.
+     */
+    void close();
 
-	// Methods for SavedSimulations table
-	bool saveSimulation(const int configID, const std::string& dateTime,
-	                    const std::string& resultFilePath, double duration,
-	                    const std::string& notes, const std::string& user,
-	                    int seed, const std::string& version,
-	                    const std::string& otherMetadataJSON);
-	bool loadSimulation(int simulationID, std::map<std::string, std::string>& simulationData);
-	bool updateSimulation(int simulationID, std::map<std::string, std::string>& simulationData);
+    // --- StandardSimulationConfigs table ---
+
+    /**
+     * @brief Saves simulation parameters to the SimulationConfigs table.
+     * @param parameters Map of parameter names and values.
+     * @return True if the operation was successful, false otherwise.
+     */
+    bool saveSimulationParameters(const std::map<std::string, std::string>& parameters);
+
+    /**
+     * @brief Loads simulation parameters from the SimulationConfigs table.
+     * @param ConfigID The configuration ID to load.
+     * @param parameters Map to be filled with parameter names and values.
+     * @return True if the configuration was found and loaded, false otherwise.
+     */
+    bool loadSimulationParameters(const int ConfigID, std::map<std::string, std::string>& parameters);
+
+    /**
+     * @brief Updates simulation parameters in the SimulationConfigs table.
+     * @param ConfigID The configuration ID to update.
+     * @param parameters Map of parameter names and values to update.
+     * @return True if the update was successful, false otherwise.
+     */
+    bool updateSimulationParameters(const int ConfigID, std::map<std::string, std::string>& parameters);
+
+    // --- TypesOfLiquids table ---
+
+    /**
+     * @brief Saves a new liquid type to the TypesOfLiquids table.
+     * @param name Name of the liquid.
+     * @param density Density of the liquid.
+     * @param viscosity Viscosity of the liquid.
+     * @param color Color of the liquid (as a string).
+     * @param description Description of the liquid.
+     * @param otherPhysicalPropertiesJSON Additional properties in JSON format.
+     * @return True if the operation was successful, false otherwise.
+     */
+    bool saveLiquidType(const std::string& name, double density, double viscosity,
+                        const std::string& color, const std::string& description,
+                        const std::string& otherPhysicalPropertiesJSON);
+
+    /**
+     * @brief Loads a liquid type from the TypesOfLiquids table.
+     * @param liquidID The ID of the liquid to load.
+     * @param liquidData Map to be filled with liquid property names and values.
+     * @return True if the liquid was found and loaded, false otherwise.
+     */
+    bool loadLiquidType(int liquidID, std::map<std::string, std::string>& liquidData);
+
+    /**
+     * @brief Updates a liquid type in the TypesOfLiquids table.
+     * @param liquidID The ID of the liquid to update.
+     * @param liquidData Map of property names and values to update.
+     * @return True if the update was successful, false otherwise.
+     */
+    bool updateLiquidType(int liquidID, std::map<std::string, std::string>& liquidData);
+
+    // --- SavedSimulations table ---
+
+    /**
+     * @brief Saves a simulation result to the SavedSimulations table.
+     * @param configID The configuration ID used for the simulation.
+     * @param dateTime Date and time of the simulation.
+     * @param resultFilePath Path to the result file.
+     * @param duration Duration of the simulation.
+     * @param notes Additional notes.
+     * @param user User who ran the simulation.
+     * @param seed Random seed used.
+     * @param version Application version.
+     * @param otherMetadataJSON Additional metadata in JSON format.
+     * @return True if the operation was successful, false otherwise.
+     */
+    bool saveSimulation(const int configID, const std::string& dateTime,
+                        const std::string& resultFilePath, double duration,
+                        const std::string& notes, const std::string& user,
+                        int seed, const std::string& version,
+                        const std::string& otherMetadataJSON);
+
+    /**
+     * @brief Loads a simulation result from the SavedSimulations table.
+     * @param simulationID The ID of the simulation to load.
+     * @param simulationData Map to be filled with simulation property names and values.
+     * @return True if the simulation was found and loaded, false otherwise.
+     */
+    bool loadSimulation(int simulationID, std::map<std::string, std::string>& simulationData);
+
+    /**
+     * @brief Updates a simulation result in the SavedSimulations table.
+     * @param simulationID The ID of the simulation to update.
+     * @param simulationData Map of property names and values to update.
+     * @return True if the update was successful, false otherwise.
+     */
+    bool updateSimulation(int simulationID, std::map<std::string, std::string>& simulationData);
 
 private:
-	std::string path;
-	sqlite3* db;
+    std::string path; ///< Path to the SQLite database file.
+    sqlite3* db;      ///< SQLite database connection handle.
 };

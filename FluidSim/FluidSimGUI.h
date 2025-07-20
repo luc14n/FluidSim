@@ -1,0 +1,11 @@
+#pragma once  
+
+#include "resource.h"  
+#include "sqlite3.h"
+
+#define FLUIDSIM_VERSION L"0.1.000"
+
+#include <fstream>
+#include <string>
+#include <iterator>
+#include <io.h>

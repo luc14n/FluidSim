@@ -10,9 +10,9 @@
 #define IDD_ABOUTBOX			103
 #define IDM_ABOUT				104
 #define IDM_EXIT				105
-#define IDI_FLUIDSIM			107
+#define IDI_FLUIDSIMGUI			107
 #define IDI_SMALL				108
-#define IDC_FLUIDSIM			109
+#define IDC_FLUIDSIMGUI			109
 #define IDC_VERSION_TEXT			110
 #define IDC_MYICON				2
 #ifndef IDC_STATIC

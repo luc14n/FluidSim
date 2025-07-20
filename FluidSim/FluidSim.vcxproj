@@ -127,6 +127,7 @@
     <ClInclude Include="FluidGrid.h" />
     <ClInclude Include="FluidParticle.h" />
     <ClInclude Include="FluidSim.h" />
+    <ClInclude Include="FluidSimGUI.h" />
     <ClInclude Include="FluidSolver.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="Resource.h" />
@@ -138,11 +139,12 @@
     <ClCompile Include="FluidGrid.cpp" />
     <ClCompile Include="FluidParticle.cpp" />
     <ClCompile Include="FluidSim.cpp" />
+    <ClCompile Include="FluidSimGUI.cpp" />
     <ClCompile Include="FluidSolver.cpp" />
     <ClCompile Include="sqlite3.c" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="FluidSim.rc" />
+    <ResourceCompile Include="FluidSimGUI.rc" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="FluidSim.ico" />

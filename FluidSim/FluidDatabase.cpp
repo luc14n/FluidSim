@@ -1,16 +1,13 @@
 #include "FluidDatabase.h"
 
 
-// Constructor
 FluidDatabase::FluidDatabase(const std::string& dbPath)
     : path(dbPath), db(nullptr) {}
 
-// Destructor
 FluidDatabase::~FluidDatabase() {
     close();
 }
 
-// Open the database connection
 bool FluidDatabase::open() {
     if (sqlite3_open(path.c_str(), &db) == SQLITE_OK) {
         return true;
@@ -19,7 +16,6 @@ bool FluidDatabase::open() {
     return false;
 }
 
-// Close the database connection
 void FluidDatabase::close() {
     if (db) {
         sqlite3_close(db);
@@ -27,7 +23,6 @@ void FluidDatabase::close() {
     }
 }
 
-// Save simulation parameters to the SimulationConfigs table
 bool FluidDatabase::saveSimulationParameters(const std::map<std::string, std::string>& parameters) {
      if (!db) return false;
 
@@ -59,7 +54,6 @@ bool FluidDatabase::saveSimulationParameters(const std::map<std::string, std::st
      return success;
 }
 
-// Load simulation parameters from the SimulationConfigs table
 bool FluidDatabase::loadSimulationParameters(const int configID, std::map<std::string, std::string>& parameters) {
      if (!db) return false;
 
@@ -116,7 +110,6 @@ bool FluidDatabase::loadSimulationParameters(const int configID, std::map<std::s
      return found;
 }
 
-// Update simulation parameters in the SimulationConfigs table
 bool FluidDatabase::updateSimulationParameters(const int configID, std::map<std::string, std::string>& parameters) {
      if (!db) return false;
 
@@ -158,7 +151,6 @@ bool FluidDatabase::updateSimulationParameters(const int configID, std::map<std:
      return success;
 }
 
-// Save a liquid type to the TypesOfLiquids table
 bool FluidDatabase::saveLiquidType(const std::string& name, double density, double viscosity,
      const std::string& color, const std::string& description,
      const std::string& otherPhysicalPropertiesJSON) {
@@ -186,7 +178,6 @@ bool FluidDatabase::saveLiquidType(const std::string& name, double density, doub
      return success;
 }
 
-// Load a liquid type by ID
 bool FluidDatabase::loadLiquidType(int liquidID, std::map<std::string, std::string>& liquidData) {
      if (!db) return false;
 
@@ -229,7 +220,6 @@ bool FluidDatabase::loadLiquidType(int liquidID, std::map<std::string, std::stri
      return found;
 }
 
-// Update a liquid type in the TypesOfLiquids table
 bool FluidDatabase::updateLiquidType(int liquidID, std::map<std::string, std::string>& liquidData) {
      if (!db) return false;
 
@@ -261,7 +251,6 @@ bool FluidDatabase::updateLiquidType(int liquidID, std::map<std::string, std::st
      return success;
 }
 
-// Save a simulation to the SavedSimulations table
 bool FluidDatabase::saveSimulation(const int configID, const std::string& dateTime,
      const std::string& resultFilePath, double duration,
      const std::string& notes, const std::string& user,
@@ -294,7 +283,6 @@ bool FluidDatabase::saveSimulation(const int configID, const std::string& dateTi
      return success;
 }
 
-// Load a simulation by ID
 bool FluidDatabase::loadSimulation(int simulationID, std::map<std::string, std::string>& simulationData) {
      if (!db) return false;
 
@@ -345,7 +333,6 @@ bool FluidDatabase::loadSimulation(int simulationID, std::map<std::string, std::
      return found;
 }
 
-// Update a simulation in the SavedSimulations table
 bool FluidDatabase::updateSimulation(int simulationID, std::map<std::string, std::string>& simulationData) {
      if (!db) return false;
 

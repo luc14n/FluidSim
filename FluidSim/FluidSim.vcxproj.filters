@@ -30,7 +30,7 @@
     <ClInclude Include="Resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FluidSim.h">
+    <ClInclude Include="FluidSimGUI.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="sqlite3.h">
@@ -48,9 +48,12 @@
     <ClInclude Include="FluidDatabase.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="FluidSim.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="FluidSim.cpp">
+    <ClCompile Include="FluidSimGUI.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="sqlite3.c">
@@ -68,9 +71,12 @@
     <ClCompile Include="FluidDatabase.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="FluidSim.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="FluidSim.rc">
+    <ResourceCompile Include="FluidSimGUI.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
   </ItemGroup>
