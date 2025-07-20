@@ -3,6 +3,7 @@
 
 #include "framework.h"
 #include "FluidSim.h"
+#include "Resource.h"
 
 #define MAX_LOADSTRING 100
 
@@ -27,31 +28,55 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     // Initialize SQLite Database
     sqlite3* db = nullptr;
+    bool dbExists = (_waccess(L"FluidSim.db", 0) == 0);
+
     int rc = sqlite3_open("FluidSim.db", &db);
     if (rc) {
-        MessageBox(nullptr, L"Can't open database", L"Error", MB_OK | MB_ICONERROR);
-	   return rc;
+         MessageBox(nullptr, L"Can't open database", L"Error", MB_OK | MB_ICONERROR);
+         return rc;
     }
 
-    // Example: Create a table if it doesn't exist
-    const char* createTableSQL = "CREATE TABLE IF NOT EXISTS MyTable (id INTEGER PRIMARY KEY, name TEXT);";
-    char* errMsg = nullptr;
-    rc = sqlite3_exec(db, createTableSQL, nullptr, nullptr, &errMsg);
-    if (rc != SQLITE_OK) {
-         MessageBoxA(nullptr, errMsg, "SQL Error", MB_OK | MB_ICONERROR);
-         sqlite3_free(errMsg);
-         sqlite3_close(db);
-         return FALSE;
+    // If the database is new, initialize schema from schema.sql
+    if (!dbExists) {
+        // Find and load the resource
+        HRSRC hRes = FindResource(nullptr, MAKEINTRESOURCE(SCHEMA_SQL), RT_RCDATA);
+        if (!hRes) {
+            MessageBox(nullptr, L"Missing schema resource", L"Error", MB_OK | MB_ICONERROR);
+            sqlite3_close(db);
+            return FALSE;
+        }
+        HGLOBAL hData = LoadResource(nullptr, hRes);
+        if (!hData) {
+            MessageBox(nullptr, L"Failed to load schema resource", L"Error", MB_OK | MB_ICONERROR);
+            sqlite3_close(db);
+            return FALSE;
+        }
+        DWORD dataSize = SizeofResource(nullptr, hRes);
+        const char* schemaSQL = static_cast<const char*>(LockResource(hData));
+        if (!schemaSQL) {
+            MessageBox(nullptr, L"Failed to lock schema resource", L"Error", MB_OK | MB_ICONERROR);
+            sqlite3_close(db);
+            return FALSE;
+        }
+        char* errMsg = nullptr;
+        rc = sqlite3_exec(db, schemaSQL, nullptr, nullptr, &errMsg);
+        if (rc != SQLITE_OK) {
+            MessageBoxA(nullptr, errMsg, "SQL Error", MB_OK | MB_ICONERROR);
+            sqlite3_free(errMsg);
+            sqlite3_close(db);
+            return FALSE;
+        }
     }
-    
-     // Initialize global strings
+
+    // Initialize global strings
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
     LoadStringW(hInstance, IDC_FLUIDSIM, szWindowClass, MAX_LOADSTRING);
     MyRegisterClass(hInstance);
 
     // Perform application initialization:
-    if (!InitInstance (hInstance, nCmdShow))
+    if (!InitInstance(hInstance, nCmdShow))
     {
+        sqlite3_close(db);
         return FALSE;
     }
 

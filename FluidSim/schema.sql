@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS TypesOfLiquids (
     Viscosity REAL,
     Color TEXT,
     Description TEXT,
-    OtherPhysicalProperties TEXT
+    OtherPhysicalPropertiesJSON TEXT -- JSON package
 );
 
 -- Standard Simulation Configurations
@@ -15,13 +15,13 @@ CREATE TABLE IF NOT EXISTS StandardSimulationConfigs (
     Name TEXT NOT NULL,
     GridSize TEXT,
     ParticleCount INTEGER,
-    InflowParams TEXT,
-    OutflowParams TEXT,
+    InflowParamsJSON TEXT,   -- JSON package
+    OutflowParamsJSON TEXT,  -- JSON package
     Timestep REAL,
     MethodOfComputation TEXT,
     FluidID INTEGER,
     Description TEXT,
-    OtherParams TEXT,
+    OtherParamsJSON TEXT,    -- JSON package
     FOREIGN KEY (FluidID) REFERENCES TypesOfLiquids(LiquidID)
 );
 
@@ -36,6 +36,6 @@ CREATE TABLE IF NOT EXISTS SavedSimulations (
     User TEXT,
     Seed INTEGER,
     Version TEXT,
-    OtherMetadata TEXT,
+    OtherMetadataJSON TEXT,  -- JSON package
     FOREIGN KEY (ConfigID) REFERENCES StandardSimulationConfigs(ConfigID)
 );

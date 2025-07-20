@@ -19,9 +19,6 @@
     <Filter Include="SQLFiles">
       <UniqueIdentifier>{465d1070-8f5d-44b5-a2a0-ebd192f1df95}</UniqueIdentifier>
     </Filter>
-    <Filter Include="GIt">
-      <UniqueIdentifier>{f93007bf-2d50-4fcb-bfbe-ec2fd5f9024f}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -87,9 +84,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="schema.sql">
-      <Filter>SQLFiles</Filter>
-    </None>
-    <None Include="FluidSim.db">
       <Filter>SQLFiles</Filter>
     </None>
   </ItemGroup>
