@@ -10,11 +10,12 @@
 #define MAX_LOADSTRING 100
 
 // Global Variables:
-HINSTANCE hInst;                                // current instance
-WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
-WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
-INT g_showScreen = 0;                   // Flag to show home screen
-HWND g_hToolbar = nullptr;				   // Toolbar handle
+HINSTANCE hInst;							// current instance
+WCHAR szTitle[MAX_LOADSTRING];				// The title bar text
+WCHAR szWindowClass[MAX_LOADSTRING];			// the main window class name
+INT g_showScreen = 0;						// Flag to show home screen
+HWND g_hToolbar = nullptr;					// Toolbar handle
+int g_selectedTable = 0;						// 0: Liquids, 1: Configs, 2: Sims
 
 // Forward declarations of functions included in this code module:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -232,6 +233,21 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case IDM_DATABASE:
 		case IDM_TOOLBAR_DATABASE:
 			g_showScreen = IDM_DATABASE;
+
+			CreateWindow(L"BUTTON", L"Liquids", WS_TABSTOP | WS_VISIBLE | WS_CHILD,
+				20, 60, 100, 30, hWnd, (HMENU)IDC_BTN_LIQUIDS, hInst, NULL);
+			CreateWindow(L"BUTTON", L"Configs", WS_TABSTOP | WS_VISIBLE | WS_CHILD,
+				130, 60, 100, 30, hWnd, (HMENU)IDC_BTN_CONFIGS, hInst, NULL);
+			CreateWindow(L"BUTTON", L"Simulations", WS_TABSTOP | WS_VISIBLE | WS_CHILD,
+				240, 60, 120, 30, hWnd, (HMENU)IDC_BTN_SIMS, hInst, NULL);
+
+			CreateWindow(L"BUTTON", L"Save", WS_TABSTOP | WS_VISIBLE | WS_CHILD,
+				20, 100, 80, 30, hWnd, (HMENU)IDC_BTN_SAVE, hInst, NULL);
+			CreateWindow(L"BUTTON", L"Load", WS_TABSTOP | WS_VISIBLE | WS_CHILD,
+				110, 100, 80, 30, hWnd, (HMENU)IDC_BTN_LOAD, hInst, NULL);
+			CreateWindow(L"BUTTON", L"Update", WS_TABSTOP | WS_VISIBLE | WS_CHILD,
+				200, 100, 80, 30, hWnd, (HMENU)IDC_BTN_UPDATE, hInst, NULL);
+
 			InvalidateRect(hWnd, nullptr, TRUE); // Request redraw
 			break;
 		case IDM_HOME:
@@ -239,6 +255,29 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			g_showScreen = IDM_HOME;
 			InvalidateRect(hWnd, nullptr, TRUE); // Request redraw
 			break;
+
+		case IDC_BTN_LIQUIDS: g_selectedTable = 0; /* update UI */ break;
+		case IDC_BTN_CONFIGS: g_selectedTable = 1; /* update UI */ break;
+		case IDC_BTN_SIMS:    g_selectedTable = 2; /* update UI */ break;
+
+		case IDC_BTN_SAVE:
+			if (g_selectedTable == 0) {
+				// Call FluidDatabase::saveLiquidType(...)
+			}
+			else if (g_selectedTable == 1) {
+				// Call FluidDatabase::saveSimulationParameters(...)
+			}
+			else if (g_selectedTable == 2) {
+				// Call FluidDatabase::saveSimulation(...)
+			}
+			break;
+		case IDC_BTN_LOAD:
+			// Similar logic, call load* methods
+			break;
+		case IDC_BTN_UPDATE:
+			// Similar logic, call update* methods
+			break;
+
 		default:
 			return DefWindowProc(hWnd, message, wParam, lParam);
 		}
