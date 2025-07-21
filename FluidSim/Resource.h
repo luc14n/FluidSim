@@ -36,13 +36,6 @@
 #define IDC_VERSION_TEXT			110
 #define IDC_MYICON				2
 
-#define IDC_BTN_LIQUIDS			1010
-#define IDC_BTN_CONFIGS			1011
-#define IDC_BTN_SIMS			1012
-#define IDC_BTN_SAVE			1020
-#define IDC_BTN_LOAD			1021
-#define IDC_BTN_UPDATE			1022
-
 #ifndef IDC_STATIC
 #define IDC_STATIC				-1
 #endif

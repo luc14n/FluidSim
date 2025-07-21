@@ -10,3 +10,7 @@
 #include <iterator>
 #include <io.h>
 #include <commctrl.h>
+
+// Pages
+#include "PGHome.h"
+#include "PGDatabase.h"
