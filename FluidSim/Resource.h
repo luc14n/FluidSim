@@ -20,10 +20,16 @@
 #define IDM_EXIT				1102
 #define IDM_DATABASE			1103
 #define IDM_HOME				1104
+#define IDM_SETTINGS			1105
+
+#define IDM_TOOLBAR_HOME			1201
+#define IDM_TOOLBAR_DATABASE		1202
 
 // Icon IDs
-#define IDI_FLUIDSIMGUI			107
-#define IDI_SMALL				108
+#define IDI_FLUIDSIMGUI			2001
+#define IDI_SMALL				2002
+#define IDI_HOME				2003
+#define IDI_DATABASE			2004
 
 // Control IDs
 #define IDC_FLUIDSIMGUI			109

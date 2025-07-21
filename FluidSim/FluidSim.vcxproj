@@ -147,10 +147,15 @@
     <ResourceCompile Include="FluidSimGUI.rc" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="database.ico" />
     <Image Include="FluidSim.ico" />
+    <Image Include="home.ico" />
     <Image Include="small.ico" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="app.manifest" />
+    <None Include="database.svg" />
+    <None Include="home.svg" />
     <None Include="schema.sql" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

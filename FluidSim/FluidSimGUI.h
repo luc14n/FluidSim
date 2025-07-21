@@ -9,3 +9,4 @@
 #include <string>
 #include <iterator>
 #include <io.h>
+#include <commctrl.h>
