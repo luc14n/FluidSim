@@ -17,45 +17,61 @@ bool FluidDatabase::open() {
 }
 
 void FluidDatabase::close() {
-    if (db) {
+    if (validateDB()) {
         sqlite3_close(db);
         db = nullptr;
     }
 }
 
 bool FluidDatabase::saveSimulationParameters(const std::map<std::string, std::string>& parameters) {
-     if (!db) return false;
+    if (!validateDB()) return false;
 
-     const char* sql =
-          "INSERT INTO SimulationConfigs "
-          "(ConfigID, Name, GridSize, ParticleCount, InflowParamsJSON, OutflowParamsJSON, "
-          "Timestep, MethodOfComputation, FluidID, Description, IsStandard, OtherParamsJSON) "
-          "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+    bool hasPK = parameters.count("ConfigID") && !parameters.at("ConfigID").empty();
+    const char* sql = nullptr;
+    sqlite3_stmt* stmt = nullptr;
+    int bindIdx = 1;
 
-     sqlite3_stmt* stmt = nullptr;
-     if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK)
-          return false;
+    if (hasPK) {
+        sql =
+            "INSERT INTO SimulationConfigs "
+            "(ConfigID, Name, GridSize, ParticleCount, InflowParamsJSON, OutflowParamsJSON, "
+            "Timestep, MethodOfComputation, FluidID, Description, IsStandard, OtherParamsJSON) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+    }
+    else {
+        sql =
+            "INSERT INTO SimulationConfigs "
+            "(Name, GridSize, ParticleCount, InflowParamsJSON, OutflowParamsJSON, "
+            "Timestep, MethodOfComputation, FluidID, Description, IsStandard, OtherParamsJSON) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+    }
 
-     sqlite3_bind_text(stmt, 1, parameters.at("Name").c_str(), -1, SQLITE_TRANSIENT);
-     sqlite3_bind_text(stmt, 2, parameters.at("GridSize").c_str(), -1, SQLITE_TRANSIENT);
-     sqlite3_bind_int(stmt, 3, std::stoi(parameters.at("ParticleCount")));
-     sqlite3_bind_text(stmt, 4, parameters.at("InflowParamsJSON").c_str(), -1, SQLITE_TRANSIENT);
-     sqlite3_bind_text(stmt, 5, parameters.at("OutflowParamsJSON").c_str(), -1, SQLITE_TRANSIENT);
-     sqlite3_bind_double(stmt, 6, std::stod(parameters.at("Timestep")));
-     sqlite3_bind_text(stmt, 7, parameters.at("MethodOfComputation").c_str(), -1, SQLITE_TRANSIENT);
-     sqlite3_bind_int(stmt, 8, std::stoi(parameters.at("FluidID")));
-     sqlite3_bind_text(stmt, 9, parameters.at("Description").c_str(), -1, SQLITE_TRANSIENT);
-     sqlite3_bind_int(stmt, 10, std::stoi(parameters.at("IsStandard")));
-     sqlite3_bind_text(stmt, 11, parameters.at("OtherParamsJSON").c_str(), -1, SQLITE_TRANSIENT);
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK)
+        return false;
 
-     bool success = (sqlite3_step(stmt) == SQLITE_DONE);
+    if (hasPK) {
+        sqlite3_bind_int(stmt, bindIdx++, std::stoi(parameters.at("ConfigID")));
+    }
+    sqlite3_bind_text(stmt, bindIdx++, parameters.at("Name").c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, bindIdx++, parameters.at("GridSize").c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(stmt, bindIdx++, std::stoi(parameters.at("ParticleCount")));
+    sqlite3_bind_text(stmt, bindIdx++, parameters.at("InflowParamsJSON").c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, bindIdx++, parameters.at("OutflowParamsJSON").c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_double(stmt, bindIdx++, std::stod(parameters.at("Timestep")));
+    sqlite3_bind_text(stmt, bindIdx++, parameters.at("MethodOfComputation").c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(stmt, bindIdx++, std::stoi(parameters.at("FluidID")));
+    sqlite3_bind_text(stmt, bindIdx++, parameters.at("Description").c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(stmt, bindIdx++, std::stoi(parameters.at("IsStandard")));
+    sqlite3_bind_text(stmt, bindIdx++, parameters.at("OtherParamsJSON").c_str(), -1, SQLITE_TRANSIENT);
 
-     sqlite3_finalize(stmt);
-     return success;
+    bool success = (sqlite3_step(stmt) == SQLITE_DONE);
+
+    sqlite3_finalize(stmt);
+    return success;
 }
 
 bool FluidDatabase::loadSimulationParameters(const int configID, std::map<std::string, std::string>& parameters) {
-     if (!db) return false;
+     if (!validateDB()) return false;
 
      const char* sql =
           "SELECT ConfigID, Name, GridSize, ParticleCount, InflowParamsJSON, OutflowParamsJSON, "
@@ -111,7 +127,7 @@ bool FluidDatabase::loadSimulationParameters(const int configID, std::map<std::s
 }
 
 bool FluidDatabase::updateSimulationParameters(const int configID, std::map<std::string, std::string>& parameters) {
-     if (!db) return false;
+    if (!validateDB()) return false;
 
      const char* sql =
           "UPDATE SimulationConfigs SET "
@@ -151,35 +167,50 @@ bool FluidDatabase::updateSimulationParameters(const int configID, std::map<std:
      return success;
 }
 
-bool FluidDatabase::saveLiquidType(const std::string& name, double density, double viscosity,
-     const std::string& color, const std::string& description,
-     const std::string& otherPhysicalPropertiesJSON) {
-     if (!db) return false;
+bool FluidDatabase::saveLiquidType(const std::string& liquidID, const std::string& name, double density, double viscosity,
+    const std::string& color, const std::string& description,
+    const std::string& otherPhysicalPropertiesJSON) {
+    if (!validateDB()) return false;
 
-     const char* sql =
-          "INSERT INTO TypesOfLiquids "
-          "(Name, Density, Viscosity, Color, Description, OtherPhysicalPropertiesJSON) "
-          "VALUES (?, ?, ?, ?, ?, ?);";
+    bool hasPK = !liquidID.empty();
+    const char* sql = nullptr;
+    sqlite3_stmt* stmt = nullptr;
+    int bindIdx = 1;
 
-     sqlite3_stmt* stmt = nullptr;
-     if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK)
-          return false;
+    if (hasPK) {
+        sql =
+            "INSERT INTO TypesOfLiquids "
+            "(LiquidID, Name, Density, Viscosity, Color, Description, OtherPhysicalPropertiesJSON) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?);";
+    }
+    else {
+        sql =
+            "INSERT INTO TypesOfLiquids "
+            "(Name, Density, Viscosity, Color, Description, OtherPhysicalPropertiesJSON) "
+            "VALUES (?, ?, ?, ?, ?, ?);";
+    }
 
-     sqlite3_bind_text(stmt, 1, name.c_str(), -1, SQLITE_TRANSIENT);
-     sqlite3_bind_double(stmt, 2, density);
-     sqlite3_bind_double(stmt, 3, viscosity);
-     sqlite3_bind_text(stmt, 4, color.c_str(), -1, SQLITE_TRANSIENT);
-     sqlite3_bind_text(stmt, 5, description.c_str(), -1, SQLITE_TRANSIENT);
-     sqlite3_bind_text(stmt, 6, otherPhysicalPropertiesJSON.c_str(), -1, SQLITE_TRANSIENT);
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK)
+        return false;
 
-     bool success = (sqlite3_step(stmt) == SQLITE_DONE);
+    if (hasPK) {
+        sqlite3_bind_int(stmt, bindIdx++, std::stoi(liquidID));
+    }
+    sqlite3_bind_text(stmt, bindIdx++, name.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_double(stmt, bindIdx++, density);
+    sqlite3_bind_double(stmt, bindIdx++, viscosity);
+    sqlite3_bind_text(stmt, bindIdx++, color.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, bindIdx++, description.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, bindIdx++, otherPhysicalPropertiesJSON.c_str(), -1, SQLITE_TRANSIENT);
 
-     sqlite3_finalize(stmt);
-     return success;
+    bool success = (sqlite3_step(stmt) == SQLITE_DONE);
+
+    sqlite3_finalize(stmt);
+    return success;
 }
 
 bool FluidDatabase::loadLiquidType(int liquidID, std::map<std::string, std::string>& liquidData) {
-     if (!db) return false;
+     if (!validateDB()) return false;
 
      const char* sql =
           "SELECT LiquidID, Name, Density, Viscosity, Color, Description, OtherPhysicalPropertiesJSON "
@@ -221,7 +252,7 @@ bool FluidDatabase::loadLiquidType(int liquidID, std::map<std::string, std::stri
 }
 
 bool FluidDatabase::updateLiquidType(int liquidID, std::map<std::string, std::string>& liquidData) {
-     if (!db) return false;
+     if (!validateDB()) return false;
 
      const char* sql =
           "UPDATE TypesOfLiquids SET "
@@ -251,40 +282,55 @@ bool FluidDatabase::updateLiquidType(int liquidID, std::map<std::string, std::st
      return success;
 }
 
-bool FluidDatabase::saveSimulation(const int configID, const std::string& dateTime,
-     const std::string& resultFilePath, double duration,
-     const std::string& notes, const std::string& user,
-     int seed, const std::string& version,
-     const std::string& otherMetadataJSON) {
-     if (!db) return false;
+bool FluidDatabase::saveSimulation(const int simulationID, const int configID, const std::string& dateTime,
+    const std::string& resultFilePath, double duration,
+    const std::string& notes, const std::string& user,
+    int seed, const std::string& version,
+    const std::string& otherMetadataJSON) {
+    if (!validateDB()) return false;
 
-     const char* sql =
-          "INSERT INTO SavedSimulations "
-          "(ConfigID, DateTime, ResultFilePath, Duration, Notes, User, Seed, Version, OtherMetadataJSON) "
-          "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);";
+    bool hasPK = simulationID > 0;
+    const char* sql = nullptr;
+    sqlite3_stmt* stmt = nullptr;
+    int bindIdx = 1;
 
-     sqlite3_stmt* stmt = nullptr;
-     if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK)
-          return false;
+    if (hasPK) {
+        sql =
+            "INSERT INTO SavedSimulations "
+            "(SimulationID, ConfigID, DateTime, ResultFilePath, Duration, Notes, User, Seed, Version, OtherMetadataJSON) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+    }
+    else {
+        sql =
+            "INSERT INTO SavedSimulations "
+            "(ConfigID, DateTime, ResultFilePath, Duration, Notes, User, Seed, Version, OtherMetadataJSON) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);";
+    }
 
-     sqlite3_bind_int(stmt, 1, configID);
-     sqlite3_bind_text(stmt, 2, dateTime.c_str(), -1, SQLITE_TRANSIENT);
-     sqlite3_bind_text(stmt, 3, resultFilePath.c_str(), -1, SQLITE_TRANSIENT);
-     sqlite3_bind_double(stmt, 4, duration);
-     sqlite3_bind_text(stmt, 5, notes.c_str(), -1, SQLITE_TRANSIENT);
-     sqlite3_bind_text(stmt, 6, user.c_str(), -1, SQLITE_TRANSIENT);
-     sqlite3_bind_int(stmt, 7, seed);
-     sqlite3_bind_text(stmt, 8, version.c_str(), -1, SQLITE_TRANSIENT);
-     sqlite3_bind_text(stmt, 9, otherMetadataJSON.c_str(), -1, SQLITE_TRANSIENT);
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK)
+        return false;
 
-     bool success = (sqlite3_step(stmt) == SQLITE_DONE);
+    if (hasPK) {
+        sqlite3_bind_int(stmt, bindIdx++, simulationID);
+    }
+    sqlite3_bind_int(stmt, bindIdx++, configID);
+    sqlite3_bind_text(stmt, bindIdx++, dateTime.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, bindIdx++, resultFilePath.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_double(stmt, bindIdx++, duration);
+    sqlite3_bind_text(stmt, bindIdx++, notes.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, bindIdx++, user.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(stmt, bindIdx++, seed);
+    sqlite3_bind_text(stmt, bindIdx++, version.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, bindIdx++, otherMetadataJSON.c_str(), -1, SQLITE_TRANSIENT);
 
-     sqlite3_finalize(stmt);
-     return success;
+    bool success = (sqlite3_step(stmt) == SQLITE_DONE);
+
+    sqlite3_finalize(stmt);
+    return success;
 }
 
 bool FluidDatabase::loadSimulation(int simulationID, std::map<std::string, std::string>& simulationData) {
-     if (!db) return false;
+     if (!validateDB()) return false;
 
      const char* sql =
           "SELECT SimulationID, ConfigID, DateTime, ResultFilePath, Duration, Notes, User, Seed, Version, OtherMetadataJSON "
@@ -334,7 +380,7 @@ bool FluidDatabase::loadSimulation(int simulationID, std::map<std::string, std::
 }
 
 bool FluidDatabase::updateSimulation(int simulationID, std::map<std::string, std::string>& simulationData) {
-     if (!db) return false;
+     if (!validateDB()) return false;
 
      const char* sql =
           "UPDATE SavedSimulations SET "
@@ -368,4 +414,18 @@ bool FluidDatabase::updateSimulation(int simulationID, std::map<std::string, std
 
      sqlite3_finalize(stmt);
      return success;
+}
+
+bool FluidDatabase::validateDB() {
+    try {
+        if (!db) {
+            throw std::runtime_error("No DB found to save to.");
+        }
+        else return true;
+    }
+    catch (const std::bad_exception& ex) {
+        std::cout << ex.what() << std::endl;
+        return false;
+    }
+    
 }

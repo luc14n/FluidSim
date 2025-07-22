@@ -59,6 +59,7 @@ public:
 
     HWND hEditControls[MAX_COLUMNS] = { nullptr };
     HWND hLabelControls[MAX_COLUMNS] = { nullptr };
+    HWND hDisplayControls[MAX_COLUMNS] = { nullptr };
     int currentColumnCount = 0;
 
     FluidDatabase db{ "FluidSim.db" };
@@ -71,6 +72,16 @@ public:
 
     // Create and show all controls for the database page
     void Show(HWND hWnd, HINSTANCE hInst) override {
+        // Initialize DB
+        try {
+            if (!db.open()) {
+                throw std::runtime_error("No DB found to open...");
+            }
+        }
+        catch (const std::bad_exception& ex) {
+            MessageBoxA(hWnd, ex.what(), "DB Error", MB_OK | MB_ICONERROR);
+        }
+        
         // Table selection buttons
         hBtnLiquids = CreateWindowW(L"BUTTON", L"Liquids", WS_TABSTOP | WS_VISIBLE | WS_CHILD,
             20, 60, 100, 30, hWnd, (HMENU)IDC_BTN_LIQUIDS, hInst, nullptr);
@@ -110,6 +121,7 @@ public:
         for (int i = 0; i < currentColumnCount; ++i) {
             DestroyIfExists(hEditControls[i]);
             DestroyIfExists(hLabelControls[i]);
+            DestroyIfExists(hDisplayControls[i]);
         }
         currentColumnCount = 0;
     }
@@ -161,7 +173,24 @@ public:
                 20, y, 260, 28, hWnd, nullptr, hInst, nullptr);
             hEditControls[i] = CreateWindowW(L"EDIT", L"", WS_CHILD | WS_VISIBLE | WS_BORDER | ES_AUTOHSCROLL,
                 290, y, 220, 28, hWnd, nullptr, hInst, nullptr);
+            hDisplayControls[i] = CreateWindowW(L"STATIC", L"", WS_CHILD | WS_VISIBLE | WS_BORDER | ES_AUTOHSCROLL | ES_READONLY,
+                520, y, 220, 28, hWnd, nullptr, hInst, nullptr);
         }
+    }
+
+    /**
+     * @brief Extracts the base column name from a label string.
+     *
+     * This function takes a label string (such as "Name* [TEXT]" or "ConfigID* [INTEGER PRIMARY KEY]")
+     * and returns only the column name portion (e.g., "Name" or "ConfigID").
+     * It stops at the first occurrence of '*', ' ', or '[' to avoid including type or constraint annotations.
+     *
+     * @param label The label string containing the column name and optional annotations.
+     * @return The extracted column name as a std::string.
+     */
+    std::string ExtractColumnName(const std::wstring& label) {
+        size_t end = label.find_first_of(L"* [");
+        return std::string(label.begin(), label.begin() + (end == std::wstring::npos ? label.size() : end));
     }
 
     // Handle WM_COMMAND for page-specific controls (table selection, save, load, update)
@@ -188,20 +217,21 @@ public:
             bool success = false;
             wchar_t buffer[256];
 
-            if (selectedTable == 0) { // Liquids: Only Name is NOT NULL, PK is auto
-                GetWindowTextW(hEditControls[1], buffer, 255); // Name
-                std::wstring wName = buffer;
+            if (selectedTable == 0) { // Liquids
+                // Get PK (optional) and fields
+                GetWindowTextW(hEditControls[0], buffer, 255); std::wstring wLiquidID = buffer;
+                GetWindowTextW(hEditControls[1], buffer, 255); std::wstring wName = buffer;
                 if (wName.empty()) {
                     MessageBoxW(hWnd, L"Name is required.", L"Validation", MB_OK | MB_ICONWARNING);
                     return true;
                 }
-                // Optional fields
                 GetWindowTextW(hEditControls[2], buffer, 255); std::wstring wDensity = buffer;
                 GetWindowTextW(hEditControls[3], buffer, 255); std::wstring wViscosity = buffer;
                 GetWindowTextW(hEditControls[4], buffer, 255); std::wstring wColor = buffer;
                 GetWindowTextW(hEditControls[5], buffer, 255); std::wstring wDescription = buffer;
                 GetWindowTextW(hEditControls[6], buffer, 255); std::wstring wOther = buffer;
 
+                std::string liquidID(wLiquidID.begin(), wLiquidID.end());
                 std::string name(wName.begin(), wName.end());
                 double density = wDensity.empty() ? 0.0 : _wtof(wDensity.c_str());
                 double viscosity = wViscosity.empty() ? 0.0 : _wtof(wViscosity.c_str());
@@ -209,16 +239,16 @@ public:
                 std::string description(wDescription.begin(), wDescription.end());
                 std::string other(wOther.begin(), wOther.end());
 
-                success = db.saveLiquidType(name, density, viscosity, color, description, other);
+                success = db.saveLiquidType(liquidID, name, density, viscosity, color, description, other);
             }
-            else if (selectedTable == 1) { // Configs: Name is NOT NULL, PK is auto
-                GetWindowTextW(hEditControls[1], buffer, 255); // Name
-                std::wstring wName = buffer;
+            else if (selectedTable == 1) { // Configs
+                // Get PK (optional) and fields
+                GetWindowTextW(hEditControls[0], buffer, 255); std::wstring wConfigID = buffer;
+                GetWindowTextW(hEditControls[1], buffer, 255); std::wstring wName = buffer;
                 if (wName.empty()) {
                     MessageBoxW(hWnd, L"Name is required.", L"Validation", MB_OK | MB_ICONWARNING);
                     return true;
                 }
-                // Only require Name, but collect all fields for completeness
                 std::map<std::string, std::string> params;
                 for (int i = 0; i < _countof(CONFIGS_COLUMNS); ++i) {
                     GetWindowTextW(hEditControls[i], buffer, 255);
@@ -228,11 +258,13 @@ public:
                     std::string scol(wcol.begin(), wcol.end());
                     params[scol] = sval;
                 }
+                // If ConfigID is empty, erase it so the DB will auto-generate
+                if (params["ConfigID"].empty()) params.erase("ConfigID");
                 success = db.saveSimulationParameters(params);
             }
-            else if (selectedTable == 2) { // Simulations: No NOT NULL, PK is auto
-                // All fields are optional for saveSimulation, but PK is auto
-                wchar_t buffer[256];
+            else if (selectedTable == 2) { // Simulations
+                // Get PK (optional) and fields
+                GetWindowTextW(hEditControls[0], buffer, 255); std::wstring wSimID = buffer;
                 GetWindowTextW(hEditControls[1], buffer, 255); std::wstring wConfigID = buffer;
                 GetWindowTextW(hEditControls[2], buffer, 255); std::wstring wDateTime = buffer;
                 GetWindowTextW(hEditControls[3], buffer, 255); std::wstring wResultFilePath = buffer;
@@ -243,6 +275,7 @@ public:
                 GetWindowTextW(hEditControls[8], buffer, 255); std::wstring wVersion = buffer;
                 GetWindowTextW(hEditControls[9], buffer, 255); std::wstring wOther = buffer;
 
+                int simID = wSimID.empty() ? 0 : _wtoi(wSimID.c_str());
                 int configID = wConfigID.empty() ? 0 : _wtoi(wConfigID.c_str());
                 std::string dateTime(wDateTime.begin(), wDateTime.end());
                 std::string resultFilePath(wResultFilePath.begin(), wResultFilePath.end());
@@ -253,7 +286,7 @@ public:
                 std::string version(wVersion.begin(), wVersion.end());
                 std::string other(wOther.begin(), wOther.end());
 
-                success = db.saveSimulation(configID, dateTime, resultFilePath, duration, notes, user, seed, version, other);
+                success = db.saveSimulation(simID, configID, dateTime, resultFilePath, duration, notes, user, seed, version, other);
             }
 
             if (success) {
@@ -301,13 +334,14 @@ public:
                 case 2: columns = SIMS_COLUMNS; colCount = _countof(SIMS_COLUMNS); break;
                 }
                 for (int i = 0; i < colCount; ++i) {
-                    // Convert column name to std::string for map lookup
-                    std::wstring wcol(columns[i]);
-                    std::string scol(wcol.begin(), wcol.end());
+                    std::string scol = ExtractColumnName(columns[i]);
                     auto it = data.find(scol);
                     if (it != data.end()) {
                         std::wstring value(it->second.begin(), it->second.end());
-                        SetWindowTextW(hEditControls[i], value.c_str());
+                        SetWindowTextW(hDisplayControls[i], value.c_str());
+                    }
+                    else {
+                        SetWindowTextW(hDisplayControls[i], L"");
                     }
                 }
             }
@@ -317,8 +351,76 @@ public:
             return true;
         }
         case IDC_BTN_UPDATE:
-            // TODO: Call FluidDatabase::update* for selectedTable
+        {
+            bool success = false;
+            wchar_t buffer[256];
+
+            if (selectedTable == 0) { // Liquids
+                // Require PK (LiquidID) to update
+                GetWindowTextW(hEditControls[0], buffer, 255); std::wstring wLiquidID = buffer;
+                if (wLiquidID.empty()) {
+                    MessageBoxW(hWnd, L"LiquidID is required for update.", L"Validation", MB_OK | MB_ICONWARNING);
+                    return true;
+                }
+                std::map<std::string, std::string> liquidData;
+                for (int i = 0; i < _countof(LIQUIDS_COLUMNS); ++i) {
+                    GetWindowTextW(hEditControls[i], buffer, 255);
+                    std::wstring wval = buffer;
+                    std::string sval(wval.begin(), wval.end());
+                    std::wstring wcol(LIQUIDS_COLUMNS[i]);
+                    std::string scol = ExtractColumnName(wcol);
+                    liquidData[scol] = sval;
+                }
+                int liquidID = _wtoi(wLiquidID.c_str());
+                success = db.updateLiquidType(liquidID, liquidData);
+            }
+            else if (selectedTable == 1) { // Configs
+                // Require PK (ConfigID) to update
+                GetWindowTextW(hEditControls[0], buffer, 255); std::wstring wConfigID = buffer;
+                if (wConfigID.empty()) {
+                    MessageBoxW(hWnd, L"ConfigID is required for update.", L"Validation", MB_OK | MB_ICONWARNING);
+                    return true;
+                }
+                std::map<std::string, std::string> params;
+                for (int i = 0; i < _countof(CONFIGS_COLUMNS); ++i) {
+                    GetWindowTextW(hEditControls[i], buffer, 255);
+                    std::wstring wval = buffer;
+                    std::string sval(wval.begin(), wval.end());
+                    std::wstring wcol(CONFIGS_COLUMNS[i]);
+                    std::string scol = ExtractColumnName(wcol);
+                    params[scol] = sval;
+                }
+                int configID = _wtoi(wConfigID.c_str());
+                success = db.updateSimulationParameters(configID, params);
+            }
+            else if (selectedTable == 2) { // Simulations
+                // Require PK (SimulationID) to update
+                GetWindowTextW(hEditControls[0], buffer, 255); std::wstring wSimID = buffer;
+                if (wSimID.empty()) {
+                    MessageBoxW(hWnd, L"SimulationID is required for update.", L"Validation", MB_OK | MB_ICONWARNING);
+                    return true;
+                }
+                std::map<std::string, std::string> simData;
+                for (int i = 0; i < _countof(SIMS_COLUMNS); ++i) {
+                    GetWindowTextW(hEditControls[i], buffer, 255);
+                    std::wstring wval = buffer;
+                    std::string sval(wval.begin(), wval.end());
+                    std::wstring wcol(SIMS_COLUMNS[i]);
+                    std::string scol = ExtractColumnName(wcol);
+                    simData[scol] = sval;
+                }
+                int simID = _wtoi(wSimID.c_str());
+                success = db.updateSimulation(simID, simData);
+            }
+
+            if (success) {
+                MessageBoxW(hWnd, L"Update successful.", L"Update", MB_OK | MB_ICONINFORMATION);
+            }
+            else {
+                MessageBoxW(hWnd, L"Update failed.", L"Update", MB_OK | MB_ICONERROR);
+            }
             return true;
+        }
         default:
             return false;
         }
