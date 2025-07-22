@@ -1,6 +1,5 @@
 #include "FluidDatabase.h"
 
-
 FluidDatabase::FluidDatabase(const std::string& dbPath)
     : path(dbPath), db(nullptr) {}
 
@@ -46,8 +45,10 @@ bool FluidDatabase::saveSimulationParameters(const std::map<std::string, std::st
             "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
     }
 
-    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK)
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        printf("SQLite error: %s\n", sqlite3_errmsg(db));
         return false;
+    }
 
     if (hasPK) {
         sqlite3_bind_int(stmt, bindIdx++, std::stoi(parameters.at("ConfigID")));
@@ -79,8 +80,10 @@ bool FluidDatabase::loadSimulationParameters(const int configID, std::map<std::s
           "FROM SimulationConfigs WHERE ConfigID = ?;";
 
      sqlite3_stmt* stmt = nullptr;
-     if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK)
-          return false;
+     if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+         printf("SQLite error: %s\n", sqlite3_errmsg(db));
+         return false;
+     }
 
      if (sqlite3_bind_int(stmt, 1, configID) != SQLITE_OK) {
           sqlite3_finalize(stmt);
@@ -126,45 +129,88 @@ bool FluidDatabase::loadSimulationParameters(const int configID, std::map<std::s
      return found;
 }
 
+bool FluidDatabase::loadAllSimulationParameters(std::vector<std::map<std::string, std::string>>& records) {
+    if (!validateDB()) return false;
+    const char* sql = "SELECT * FROM SimulationConfigs;";
+    sqlite3_stmt* stmt = nullptr;
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) return false;
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        std::map<std::string, std::string> row;
+        row["ConfigID"] = std::to_string(sqlite3_column_int(stmt, 0));
+        row["Name"] = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+        row["GridSize"] = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
+        row["ParticleCount"] = std::to_string(sqlite3_column_int(stmt, 3));
+        row["InflowParamsJSON"] = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 4));
+        row["OutflowParamsJSON"] = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 5));
+        row["Timestep"] = std::to_string(sqlite3_column_double(stmt, 6));
+        row["MethodOfComputation"] = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 7));
+        row["FluidID"] = std::to_string(sqlite3_column_int(stmt, 8));
+        row["Description"] = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 9));
+        row["IsStandard"] = std::to_string(sqlite3_column_int(stmt, 10));
+        row["OtherParamsJSON"] = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 11));
+        records.push_back(row);
+    }
+    sqlite3_finalize(stmt);
+    return true;
+}
+
 bool FluidDatabase::updateSimulationParameters(const int configID, std::map<std::string, std::string>& parameters) {
     if (!validateDB()) return false;
 
-     const char* sql =
-          "UPDATE SimulationConfigs SET "
-          "Name = ?, "
-          "GridSize = ?, "
-          "ParticleCount = ?, "
-          "InflowParamsJSON = ?, "
-          "OutflowParamsJSON = ?, "
-          "Timestep = ?, "
-          "MethodOfComputation = ?, "
-          "FluidID = ?, "
-          "Description = ?, "
-          "IsStandard = ?, "
-          "OtherParamsJSON = ? "
-          "WHERE ConfigID = ?;";
+    // List of all possible columns (excluding PK)
+    const char* allColumns[] = {
+        "Name", "GridSize", "ParticleCount", "InflowParamsJSON", "OutflowParamsJSON",
+        "Timestep", "MethodOfComputation", "FluidID", "Description", "IsStandard", "OtherParamsJSON"
+    };
+    std::string sql = "UPDATE SimulationConfigs SET ";
+    std::vector<std::string> columnsToUpdate;
+    std::vector<std::string> valuesToBind;
 
-     sqlite3_stmt* stmt = nullptr;
-     if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK)
-          return false;
+    // Build the SET clause only for non-empty values
+    for (size_t i = 0; i < sizeof(allColumns) / sizeof(allColumns[0]); ++i) {
+        auto it = parameters.find(allColumns[i]);
+        if (it != parameters.end() && !it->second.empty()) {
+            if (!columnsToUpdate.empty()) sql += ", ";
+            sql += allColumns[i];
+            sql += " = ?";
+            columnsToUpdate.push_back(allColumns[i]);
+            valuesToBind.push_back(it->second);
+        }
+    }
 
-     sqlite3_bind_text(stmt, 1, parameters.at("Name").c_str(), -1, SQLITE_TRANSIENT);
-     sqlite3_bind_text(stmt, 2, parameters.at("GridSize").c_str(), -1, SQLITE_TRANSIENT);
-     sqlite3_bind_int(stmt, 3, std::stoi(parameters.at("ParticleCount")));
-     sqlite3_bind_text(stmt, 4, parameters.at("InflowParamsJSON").c_str(), -1, SQLITE_TRANSIENT);
-     sqlite3_bind_text(stmt, 5, parameters.at("OutflowParamsJSON").c_str(), -1, SQLITE_TRANSIENT);
-     sqlite3_bind_double(stmt, 6, std::stod(parameters.at("Timestep")));
-     sqlite3_bind_text(stmt, 7, parameters.at("MethodOfComputation").c_str(), -1, SQLITE_TRANSIENT);
-     sqlite3_bind_int(stmt, 8, std::stoi(parameters.at("FluidID")));
-     sqlite3_bind_text(stmt, 9, parameters.at("Description").c_str(), -1, SQLITE_TRANSIENT);
-     sqlite3_bind_int(stmt, 10, std::stoi(parameters.at("IsStandard")));
-     sqlite3_bind_text(stmt, 11, parameters.at("OtherParamsJSON").c_str(), -1, SQLITE_TRANSIENT);
-     sqlite3_bind_int(stmt, 12, configID);
+    if (columnsToUpdate.empty()) {
+        // Nothing to update
+        return false;
+    }
 
-     bool success = (sqlite3_step(stmt) == SQLITE_DONE);
+    sql += " WHERE ConfigID = ?;";
 
-     sqlite3_finalize(stmt);
-     return success;
+    sqlite3_stmt* stmt = nullptr;
+    if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK)
+        return false;
+
+    // Bind only the non-empty values
+    int bindIdx = 1;
+    for (size_t i = 0; i < columnsToUpdate.size(); ++i) {
+        const std::string& col = columnsToUpdate[i];
+        const std::string& val = valuesToBind[i];
+        if (col == "ParticleCount" || col == "FluidID" || col == "IsStandard") {
+            sqlite3_bind_int(stmt, bindIdx++, std::stoi(val));
+        }
+        else if (col == "Timestep") {
+            sqlite3_bind_double(stmt, bindIdx++, std::stod(val));
+        }
+        else {
+            sqlite3_bind_text(stmt, bindIdx++, val.c_str(), -1, SQLITE_TRANSIENT);
+        }
+    }
+    // Bind the PK
+    sqlite3_bind_int(stmt, bindIdx, configID);
+
+    bool success = (sqlite3_step(stmt) == SQLITE_DONE);
+
+    sqlite3_finalize(stmt);
+    return success;
 }
 
 bool FluidDatabase::saveLiquidType(const std::string& liquidID, const std::string& name, double density, double viscosity,
@@ -190,8 +236,10 @@ bool FluidDatabase::saveLiquidType(const std::string& liquidID, const std::strin
             "VALUES (?, ?, ?, ?, ?, ?);";
     }
 
-    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK)
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        printf("SQLite error: %s\n", sqlite3_errmsg(db));
         return false;
+    }
 
     if (hasPK) {
         sqlite3_bind_int(stmt, bindIdx++, std::stoi(liquidID));
@@ -217,8 +265,10 @@ bool FluidDatabase::loadLiquidType(int liquidID, std::map<std::string, std::stri
           "FROM TypesOfLiquids WHERE LiquidID = ?;";
 
      sqlite3_stmt* stmt = nullptr;
-     if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK)
-          return false;
+     if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+         printf("SQLite error: %s\n", sqlite3_errmsg(db));
+         return false;
+     }
 
      if (sqlite3_bind_int(stmt, 1, liquidID) != SQLITE_OK) {
           sqlite3_finalize(stmt);
@@ -251,35 +301,76 @@ bool FluidDatabase::loadLiquidType(int liquidID, std::map<std::string, std::stri
      return found;
 }
 
+bool FluidDatabase::loadAllLiquidTypes(std::vector<std::map<std::string, std::string>>& records) {
+    if (!validateDB()) return false;
+    const char* sql = "SELECT * FROM TypesOfLiquids;";
+    sqlite3_stmt* stmt = nullptr;
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) return false;
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        std::map<std::string, std::string> row;
+        row["LiquidID"] = std::to_string(sqlite3_column_int(stmt, 0));
+        row["Name"] = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+        row["Density"] = std::to_string(sqlite3_column_double(stmt, 2));
+        row["Viscosity"] = std::to_string(sqlite3_column_double(stmt, 3));
+        row["Color"] = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 4));
+        row["Description"] = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 5));
+        row["OtherPhysicalPropertiesJSON"] = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 6));
+        records.push_back(row);
+    }
+    sqlite3_finalize(stmt);
+    return true;
+}
+
 bool FluidDatabase::updateLiquidType(int liquidID, std::map<std::string, std::string>& liquidData) {
-     if (!validateDB()) return false;
+    if (!validateDB()) return false;
 
-     const char* sql =
-          "UPDATE TypesOfLiquids SET "
-          "Name = ?, "
-          "Density = ?, "
-          "Viscosity = ?, "
-          "Color = ?, "
-          "Description = ?, "
-          "OtherPhysicalPropertiesJSON = ? "
-          "WHERE LiquidID = ?;";
+    // List of all possible columns (excluding PK)
+    const char* allColumns[] = {
+        "Name", "Density", "Viscosity", "Color", "Description", "OtherPhysicalPropertiesJSON"
+    };
+    std::string sql = "UPDATE TypesOfLiquids SET ";
+    std::vector<std::string> columnsToUpdate;
+    std::vector<std::string> valuesToBind;
 
-     sqlite3_stmt* stmt = nullptr;
-     if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK)
-          return false;
+    for (size_t i = 0; i < sizeof(allColumns) / sizeof(allColumns[0]); ++i) {
+        auto it = liquidData.find(allColumns[i]);
+        if (it != liquidData.end() && !it->second.empty()) {
+            if (!columnsToUpdate.empty()) sql += ", ";
+            sql += allColumns[i];
+            sql += " = ?";
+            columnsToUpdate.push_back(allColumns[i]);
+            valuesToBind.push_back(it->second);
+        }
+    }
 
-     sqlite3_bind_text(stmt, 1, liquidData.at("Name").c_str(), -1, SQLITE_TRANSIENT);
-     sqlite3_bind_double(stmt, 2, std::stod(liquidData.at("Density")));
-     sqlite3_bind_double(stmt, 3, std::stod(liquidData.at("Viscosity")));
-     sqlite3_bind_text(stmt, 4, liquidData.at("Color").c_str(), -1, SQLITE_TRANSIENT);
-     sqlite3_bind_text(stmt, 5, liquidData.at("Description").c_str(), -1, SQLITE_TRANSIENT);
-     sqlite3_bind_text(stmt, 6, liquidData.at("OtherPhysicalPropertiesJSON").c_str(), -1, SQLITE_TRANSIENT);
-     sqlite3_bind_int(stmt, 7, liquidID);
+    if (columnsToUpdate.empty()) {
+        // Nothing to update
+        return false;
+    }
 
-     bool success = (sqlite3_step(stmt) == SQLITE_DONE);
+    sql += " WHERE LiquidID = ?;";
 
-     sqlite3_finalize(stmt);
-     return success;
+    sqlite3_stmt* stmt = nullptr;
+    if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK)
+        return false;
+
+    int bindIdx = 1;
+    for (size_t i = 0; i < columnsToUpdate.size(); ++i) {
+        const std::string& col = columnsToUpdate[i];
+        const std::string& val = valuesToBind[i];
+        if (col == "Density" || col == "Viscosity") {
+            sqlite3_bind_double(stmt, bindIdx++, std::stod(val));
+        }
+        else {
+            sqlite3_bind_text(stmt, bindIdx++, val.c_str(), -1, SQLITE_TRANSIENT);
+        }
+    }
+    sqlite3_bind_int(stmt, bindIdx, liquidID);
+
+    bool success = (sqlite3_step(stmt) == SQLITE_DONE);
+
+    sqlite3_finalize(stmt);
+    return success;
 }
 
 bool FluidDatabase::saveSimulation(const int simulationID, const int configID, const std::string& dateTime,
@@ -307,8 +398,10 @@ bool FluidDatabase::saveSimulation(const int simulationID, const int configID, c
             "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);";
     }
 
-    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK)
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        printf("SQLite error: %s\n", sqlite3_errmsg(db));
         return false;
+    }
 
     if (hasPK) {
         sqlite3_bind_int(stmt, bindIdx++, simulationID);
@@ -337,8 +430,10 @@ bool FluidDatabase::loadSimulation(int simulationID, std::map<std::string, std::
           "FROM SavedSimulations WHERE SimulationID = ?;";
 
      sqlite3_stmt* stmt = nullptr;
-     if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK)
-          return false;
+     if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+         printf("SQLite error: %s\n", sqlite3_errmsg(db));
+         return false;
+     }
 
      if (sqlite3_bind_int(stmt, 1, simulationID) != SQLITE_OK) {
           sqlite3_finalize(stmt);
@@ -379,41 +474,139 @@ bool FluidDatabase::loadSimulation(int simulationID, std::map<std::string, std::
      return found;
 }
 
+bool FluidDatabase::loadAllSimulations(std::vector<std::map<std::string, std::string>>& records) {
+    if (!validateDB()) return false;
+    const char* sql = "SELECT * FROM SavedSimulations;";
+    sqlite3_stmt* stmt = nullptr;
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) return false;
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        std::map<std::string, std::string> row;
+        row["SimulationID"] = std::to_string(sqlite3_column_int(stmt, 0));
+        row["ConfigID"] = std::to_string(sqlite3_column_int(stmt, 1));
+        row["DateTime"] = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
+        row["ResultFilePath"] = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3));
+        row["Duration"] = std::to_string(sqlite3_column_double(stmt, 4));
+        row["Notes"] = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 5));
+        row["User"] = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 6));
+        row["Seed"] = std::to_string(sqlite3_column_int(stmt, 7));
+        row["Version"] = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 8));
+        row["OtherMetadataJSON"] = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 9));
+        records.push_back(row);
+    }
+    sqlite3_finalize(stmt);
+    return true;
+}
+
 bool FluidDatabase::updateSimulation(int simulationID, std::map<std::string, std::string>& simulationData) {
-     if (!validateDB()) return false;
+    if (!validateDB()) return false;
 
-     const char* sql =
-          "UPDATE SavedSimulations SET "
-          "ConfigID = ?, "
-          "DateTime = ?, "
-          "ResultFilePath = ?, "
-          "Duration = ?, "
-          "Notes = ?, "
-          "User = ?, "
-          "Seed = ?, "
-          "Version = ?, "
-          "OtherMetadataJSON = ? "
-          "WHERE SimulationID = ?;";
+    // List of all possible columns (excluding PK)
+    const char* allColumns[] = {
+        "ConfigID", "DateTime", "ResultFilePath", "Duration", "Notes",
+        "User", "Seed", "Version", "OtherMetadataJSON"
+    };
+    std::string sql = "UPDATE SavedSimulations SET ";
+    std::vector<std::string> columnsToUpdate;
+    std::vector<std::string> valuesToBind;
 
-     sqlite3_stmt* stmt = nullptr;
-     if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK)
-          return false;
+    for (size_t i = 0; i < sizeof(allColumns) / sizeof(allColumns[0]); ++i) {
+        auto it = simulationData.find(allColumns[i]);
+        if (it != simulationData.end() && !it->second.empty()) {
+            if (!columnsToUpdate.empty()) sql += ", ";
+            sql += allColumns[i];
+            sql += " = ?";
+            columnsToUpdate.push_back(allColumns[i]);
+            valuesToBind.push_back(it->second);
+        }
+    }
 
-     sqlite3_bind_int(stmt, 1, std::stoi(simulationData.at("ConfigID")));
-     sqlite3_bind_text(stmt, 2, simulationData.at("DateTime").c_str(), -1, SQLITE_TRANSIENT);
-     sqlite3_bind_text(stmt, 3, simulationData.at("ResultFilePath").c_str(), -1, SQLITE_TRANSIENT);
-     sqlite3_bind_double(stmt, 4, std::stod(simulationData.at("Duration")));
-     sqlite3_bind_text(stmt, 5, simulationData.at("Notes").c_str(), -1, SQLITE_TRANSIENT);
-     sqlite3_bind_text(stmt, 6, simulationData.at("User").c_str(), -1, SQLITE_TRANSIENT);
-     sqlite3_bind_int(stmt, 7, std::stoi(simulationData.at("Seed")));
-     sqlite3_bind_text(stmt, 8, simulationData.at("Version").c_str(), -1, SQLITE_TRANSIENT);
-     sqlite3_bind_text(stmt, 9, simulationData.at("OtherMetadataJSON").c_str(), -1, SQLITE_TRANSIENT);
-     sqlite3_bind_int(stmt, 10, simulationID);
+    if (columnsToUpdate.empty()) {
+        // Nothing to update
+        return false;
+    }
 
-     bool success = (sqlite3_step(stmt) == SQLITE_DONE);
+    sql += " WHERE SimulationID = ?;";
 
-     sqlite3_finalize(stmt);
-     return success;
+    sqlite3_stmt* stmt = nullptr;
+    if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK)
+        return false;
+
+    int bindIdx = 1;
+    for (size_t i = 0; i < columnsToUpdate.size(); ++i) {
+        const std::string& col = columnsToUpdate[i];
+        const std::string& val = valuesToBind[i];
+        if (col == "ConfigID" || col == "Seed") {
+            sqlite3_bind_int(stmt, bindIdx++, std::stoi(val));
+        }
+        else if (col == "Duration") {
+            sqlite3_bind_double(stmt, bindIdx++, std::stod(val));
+        }
+        else {
+            sqlite3_bind_text(stmt, bindIdx++, val.c_str(), -1, SQLITE_TRANSIENT);
+        }
+    }
+    sqlite3_bind_int(stmt, bindIdx, simulationID);
+
+    bool success = (sqlite3_step(stmt) == SQLITE_DONE);
+
+    sqlite3_finalize(stmt);
+    return success;
+}
+
+bool FluidDatabase::queryTable(
+    const std::string& tableName,
+    const std::vector<std::string>& columns,
+    const std::map<std::string, std::string>& filters,
+    std::vector<std::map<std::string, std::string>>& results)
+{
+    if (!validateDB()) return false;
+
+    // Build SELECT statement
+    std::string sql = "SELECT ";
+    for (size_t i = 0; i < columns.size(); ++i) {
+        if (i > 0) sql += ", ";
+        sql += columns[i];
+    }
+    sql += " FROM " + tableName;
+
+    // Build WHERE clause
+    std::vector<std::string> filterKeys;
+    for (const auto& kv : filters) {
+        if (!kv.second.empty())
+            filterKeys.push_back(kv.first);
+    }
+    if (!filterKeys.empty()) {
+        sql += " WHERE ";
+        for (size_t i = 0; i < filterKeys.size(); ++i) {
+            if (i > 0) sql += " AND ";
+            sql += filterKeys[i] + " = ?";
+        }
+    }
+    sql += ";";
+
+    sqlite3_stmt* stmt = nullptr;
+    if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK) {
+        printf("SQLite error: %s\n", sqlite3_errmsg(db));
+        return false;
+    }
+
+    // Bind filter values
+    int bindIdx = 1;
+    for (const auto& key : filterKeys) {
+        sqlite3_bind_text(stmt, bindIdx++, filters.at(key).c_str(), -1, SQLITE_TRANSIENT);
+    }
+
+    // Fetch results
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        std::map<std::string, std::string> row;
+        for (size_t i = 0; i < columns.size(); ++i) {
+            const unsigned char* text = sqlite3_column_text(stmt, static_cast<int>(i));
+            row[columns[i]] = text ? reinterpret_cast<const char*>(text) : "";
+        }
+        results.push_back(row);
+    }
+    sqlite3_finalize(stmt);
+    return true;
 }
 
 bool FluidDatabase::validateDB() {

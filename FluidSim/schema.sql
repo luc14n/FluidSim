@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS SimulationConfigs (
     MethodOfComputation TEXT,
     FluidID INTEGER,
     Description TEXT,
-    IsStandard INTEGER DEFAULT 0  -- 0 = not standard, 1 = standard,
+    IsStandard INTEGER DEFAULT 0,  -- 0 = not standard, 1 = standard
     OtherParamsJSON TEXT,    -- JSON package
     FOREIGN KEY (FluidID) REFERENCES TypesOfLiquids(LiquidID)
 );

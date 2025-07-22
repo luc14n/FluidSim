@@ -51,6 +51,7 @@ private:
     HWND hBtnSave;      ///< Handle to the "Save" button.
     HWND hBtnLoad;      ///< Handle to the "Load" button.
     HWND hBtnUpdate;    ///< Handle to the "Update" button.
+    HWND hBtnQuery;    ///< Handle to the "Query" button.
     HWND hLabelTable;   ///< Handle to the label showing the selected table.
     int selectedTable;  ///< Index of the currently selected table (0: Liquids, 1: Configs, 2: Sims).
 };

@@ -4,6 +4,8 @@
 #include <map>
 #include <comutil.h>
 #include <windows.h>
+#include <vector>
+#include <CommCtrl.h>
 
 // Control IDs for the database page
 #define IDC_BTN_LIQUIDS     2010
@@ -12,6 +14,7 @@
 #define IDC_BTN_SAVE        2020
 #define IDC_BTN_LOAD        2021
 #define IDC_BTN_UPDATE      2022
+#define IDC_BTN_QUERY       2023
 #define MAX_COLUMNS 16
 
 /**
@@ -60,13 +63,14 @@ public:
     HWND hEditControls[MAX_COLUMNS] = { nullptr };
     HWND hLabelControls[MAX_COLUMNS] = { nullptr };
     HWND hDisplayControls[MAX_COLUMNS] = { nullptr };
+    HWND hListView = nullptr;
     int currentColumnCount = 0;
 
     FluidDatabase db{ "FluidSim.db" };
 
     PGDatabase()
         : hBtnLiquids(nullptr), hBtnConfigs(nullptr), hBtnSims(nullptr),
-        hBtnSave(nullptr), hBtnLoad(nullptr), hBtnUpdate(nullptr),
+        hBtnSave(nullptr), hBtnLoad(nullptr), hBtnUpdate(nullptr), hBtnQuery(nullptr),
         hLabelTable(nullptr), selectedTable(0) {
     }
 
@@ -101,6 +105,8 @@ public:
             110, 100, 80, 30, hWnd, (HMENU)IDC_BTN_LOAD, hInst, nullptr);
         hBtnUpdate = CreateWindowW(L"BUTTON", L"Update", WS_TABSTOP | WS_VISIBLE | WS_CHILD,
             200, 100, 80, 30, hWnd, (HMENU)IDC_BTN_UPDATE, hInst, nullptr);
+        hBtnQuery = CreateWindowW(L"BUTTON", L"Query", WS_TABSTOP | WS_VISIBLE | WS_CHILD,
+            290, 100, 80, 30, hWnd, (HMENU)IDC_BTN_QUERY, hInst, nullptr);
 
         // Show Liquids table fields by default
         selectedTable = 0;
@@ -115,6 +121,7 @@ public:
         DestroyIfExists(hBtnSave);
         DestroyIfExists(hBtnLoad);
         DestroyIfExists(hBtnUpdate);
+        DestroyIfExists(hBtnQuery);
         DestroyIfExists(hLabelTable);
 
         // Destroy all dynamic label and edit controls
@@ -123,6 +130,13 @@ public:
             DestroyIfExists(hLabelControls[i]);
             DestroyIfExists(hDisplayControls[i]);
         }
+
+		// Destroy the ListView control if it exists
+        if (hListView) {
+            DestroyWindow(hListView);
+            hListView = nullptr;
+        }
+
         currentColumnCount = 0;
     }
 
@@ -152,16 +166,23 @@ public:
         for (int i = 0; i < currentColumnCount; ++i) {
             DestroyIfExists(hEditControls[i]);
             DestroyIfExists(hLabelControls[i]);
+            DestroyIfExists(hDisplayControls[i]);
+        }
+        // Reset ListView if it exists
+        if (hListView) {
+            DestroyWindow(hListView);
+            hListView = nullptr;
         }
         currentColumnCount = 0;
 
         // Select columns for the chosen table
         const wchar_t** columns = nullptr;
         int colCount = 0;
+        std::string tableName;
         switch (tableIndex) {
-        case 0: columns = LIQUIDS_COLUMNS; colCount = _countof(LIQUIDS_COLUMNS); break;
-        case 1: columns = CONFIGS_COLUMNS; colCount = _countof(CONFIGS_COLUMNS); break;
-        case 2: columns = SIMS_COLUMNS; colCount = _countof(SIMS_COLUMNS); break;
+        case 0: columns = LIQUIDS_COLUMNS; colCount = _countof(LIQUIDS_COLUMNS); tableName = "TypesOfLiquids"; break;
+        case 1: columns = CONFIGS_COLUMNS; colCount = _countof(CONFIGS_COLUMNS); tableName = "SimulationConfigs"; break;
+        case 2: columns = SIMS_COLUMNS; colCount = _countof(SIMS_COLUMNS); tableName = "SavedSimulations"; break;
         }
         currentColumnCount = colCount;
 
@@ -171,11 +192,25 @@ public:
             // Expanded label width to fit longer text
             hLabelControls[i] = CreateWindowW(L"STATIC", columns[i], WS_CHILD | WS_VISIBLE,
                 20, y, 260, 28, hWnd, nullptr, hInst, nullptr);
-            hEditControls[i] = CreateWindowW(L"EDIT", L"", WS_CHILD | WS_VISIBLE | WS_BORDER | ES_AUTOHSCROLL,
+            hEditControls[i] = CreateWindowW(L"EDIT", L"", WS_CHILD | WS_VISIBLE | WS_BORDER | WS_TABSTOP | ES_AUTOHSCROLL,
                 290, y, 220, 28, hWnd, nullptr, hInst, nullptr);
-            hDisplayControls[i] = CreateWindowW(L"STATIC", L"", WS_CHILD | WS_VISIBLE | WS_BORDER | ES_AUTOHSCROLL | ES_READONLY,
+            hDisplayControls[i] = CreateWindowW(L"STATIC", L"", WS_CHILD | WS_VISIBLE | WS_BORDER | WS_TABSTOP | ES_AUTOHSCROLL | ES_READONLY,
                 520, y, 220, 28, hWnd, nullptr, hInst, nullptr);
         }
+
+        // Build column names vector
+        std::vector<std::string> colNames;
+        for (int i = 0; i < colCount; ++i) {
+            std::wstring wcol(columns[i]);
+            colNames.push_back(ExtractColumnName(wcol));
+        }
+
+        // Get all records for the table (no filters)
+        std::vector<std::map<std::string, std::string>> records;
+        db.queryTable(tableName, colNames, std::map<std::string, std::string>(), records);
+
+        // Use the new generalized PopulateListView
+        PopulateListView(colNames, records);
     }
 
     /**
@@ -191,6 +226,68 @@ public:
     std::string ExtractColumnName(const std::wstring& label) {
         size_t end = label.find_first_of(L"* [");
         return std::string(label.begin(), label.begin() + (end == std::wstring::npos ? label.size() : end));
+    }
+
+    /**
+     * @brief Populates the ListView with records from the database.
+     *
+     * This function destroys any existing ListView, creates a new one, and populates it
+     * with records from the specified table.
+     *
+     * @param colNames Column names for the table.
+     * @param records Records to display in the ListView.
+	 */
+    void PopulateListView(const std::vector<std::string>& colNames, const std::vector<std::map<std::string, std::string>>& records) {
+        // Destroy previous ListView if it exists
+        if (hListView) {
+            DestroyWindow(hListView);
+            hListView = nullptr;
+        }
+
+        HWND hWnd = hLabelTable ? GetParent(hLabelTable) : nullptr;
+        if (!hWnd) return;
+
+        // Calculate ListView position and size
+        int colCount = static_cast<int>(colNames.size());
+        RECT rcClient;
+        GetClientRect(hWnd, &rcClient);
+        int listViewTop = 150 + colCount * 32 + 20;
+        int listViewHeight = rcClient.bottom - listViewTop - 10;
+        hListView = CreateWindowW(WC_LISTVIEW, L"",
+            WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS,
+            20, listViewTop, rcClient.right - 40, listViewHeight,
+            hWnd, nullptr, GetModuleHandle(nullptr), nullptr);
+
+        ListView_SetExtendedListViewStyle(hListView, LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
+
+        // Insert columns (headers)
+        for (int i = 0; i < colCount; ++i) {
+            std::wstring header(colNames[i].begin(), colNames[i].end());
+            LVCOLUMNW lvc = { 0 };
+            lvc.mask = LVCF_TEXT | LVCF_WIDTH;
+            lvc.pszText = (LPWSTR)header.c_str();
+            lvc.cx = 120;
+            ListView_InsertColumn(hListView, i, &lvc);
+        }
+
+        // Insert rows
+        for (size_t row = 0; row < records.size(); ++row) {
+            const auto& rec = records[row];
+            LVITEMW lvi = { 0 };
+            lvi.mask = LVIF_TEXT;
+            lvi.iItem = (int)row;
+            lvi.iSubItem = 0;
+            auto it = rec.find(colNames[0]);
+            std::wstring value = (it != rec.end()) ? std::wstring(it->second.begin(), it->second.end()) : L"";
+            lvi.pszText = (LPWSTR)value.c_str();
+            int idx = ListView_InsertItem(hListView, &lvi);
+
+            for (int col = 1; col < colCount; ++col) {
+                it = rec.find(colNames[col]);
+                value = (it != rec.end()) ? std::wstring(it->second.begin(), it->second.end()) : L"";
+                ListView_SetItemText(hListView, idx, col, (LPWSTR)value.c_str());
+            }
+        }
     }
 
     // Handle WM_COMMAND for page-specific controls (table selection, save, load, update)
@@ -241,29 +338,27 @@ public:
 
                 success = db.saveLiquidType(liquidID, name, density, viscosity, color, description, other);
             }
-            else if (selectedTable == 1) { // Configs
-                // Get PK (optional) and fields
-                GetWindowTextW(hEditControls[0], buffer, 255); std::wstring wConfigID = buffer;
-                GetWindowTextW(hEditControls[1], buffer, 255); std::wstring wName = buffer;
-                if (wName.empty()) {
-                    MessageBoxW(hWnd, L"Name is required.", L"Validation", MB_OK | MB_ICONWARNING);
-                    return true;
-                }
+            else if (selectedTable == 1) { // Configs (SimulationConfigs)
                 std::map<std::string, std::string> params;
                 for (int i = 0; i < _countof(CONFIGS_COLUMNS); ++i) {
                     GetWindowTextW(hEditControls[i], buffer, 255);
                     std::wstring wval = buffer;
                     std::string sval(wval.begin(), wval.end());
                     std::wstring wcol(CONFIGS_COLUMNS[i]);
-                    std::string scol(wcol.begin(), wcol.end());
+                    std::string scol = ExtractColumnName(wcol);
                     params[scol] = sval;
+                }
+                // Name is required
+                if (params["Name"].empty()) {
+                    MessageBoxW(hWnd, L"Name is required.", L"Validation", MB_OK | MB_ICONWARNING);
+                    return true;
                 }
                 // If ConfigID is empty, erase it so the DB will auto-generate
                 if (params["ConfigID"].empty()) params.erase("ConfigID");
                 success = db.saveSimulationParameters(params);
             }
-            else if (selectedTable == 2) { // Simulations
-                // Get PK (optional) and fields
+            else if (selectedTable == 2) { // Simulations (SavedSimulations)
+                // Gather all fields
                 GetWindowTextW(hEditControls[0], buffer, 255); std::wstring wSimID = buffer;
                 GetWindowTextW(hEditControls[1], buffer, 255); std::wstring wConfigID = buffer;
                 GetWindowTextW(hEditControls[2], buffer, 255); std::wstring wDateTime = buffer;
@@ -293,7 +388,8 @@ public:
                 MessageBoxW(hWnd, L"Save successful.", L"Save", MB_OK | MB_ICONINFORMATION);
             }
             else {
-                MessageBoxW(hWnd, L"Save failed.", L"Save", MB_OK | MB_ICONERROR);
+                // Show SQLite error if available
+                MessageBoxA(hWnd, db.lastError(), "Save", MB_OK | MB_ICONERROR);
             }
             return true;
         }
@@ -421,6 +517,50 @@ public:
             }
             return true;
         }
+        case IDC_BTN_QUERY:
+        {
+            wchar_t buffer[256];
+            std::map<std::string, std::string> filters;
+            const wchar_t** columns = nullptr;
+            int colCount = 0;
+            std::string tableName;
+            std::vector<std::string> colNames;
+
+            switch (selectedTable) {
+            case 0:
+                columns = LIQUIDS_COLUMNS; colCount = _countof(LIQUIDS_COLUMNS);
+                tableName = "TypesOfLiquids";
+                break;
+            case 1:
+                columns = CONFIGS_COLUMNS; colCount = _countof(CONFIGS_COLUMNS);
+                tableName = "SimulationConfigs";
+                break;
+            case 2:
+                columns = SIMS_COLUMNS; colCount = _countof(SIMS_COLUMNS);
+                tableName = "SavedSimulations";
+                break;
+            }
+
+            for (int i = 0; i < colCount; ++i) {
+                GetWindowTextW(hEditControls[i], buffer, 255);
+                std::wstring wval = buffer;
+                std::string sval(wval.begin(), wval.end());
+                std::wstring wcol(columns[i]);
+                std::string scol = ExtractColumnName(wcol);
+                colNames.push_back(scol);
+                filters[scol] = sval;
+            }
+
+            std::vector<std::map<std::string, std::string>> results;
+            if (db.queryTable(tableName, colNames, filters, results)) {
+                // Populate the ListView or your dynamic table with results
+                PopulateListView(colNames, results);
+            }
+            else {
+                MessageBoxW(hWnd, L"Query failed.", L"Query", MB_OK | MB_ICONERROR);
+            }
+            return true;
+        }
         default:
             return false;
         }
@@ -441,6 +581,7 @@ private:
     HWND hBtnSave;
     HWND hBtnLoad;
     HWND hBtnUpdate;
+    HWND hBtnQuery;
     HWND hLabelTable;
     int selectedTable;
 };

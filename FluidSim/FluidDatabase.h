@@ -3,6 +3,7 @@
 #include <string>
 #include <map>
 #include <iostream>
+#include <vector>
 
 /**
  * @brief Handles all database operations for the FluidSim application.
@@ -57,6 +58,13 @@ public:
     bool loadSimulationParameters(const int ConfigID, std::map<std::string, std::string>& parameters);
 
     /**
+     * @brief Loads all simulation configurations from the SimulationConfigs table.
+     * @param records Vector to be filled with maps of parameter names and values for each configuration.
+     * @return True if the operation was successful, false otherwise.
+     */
+    bool loadAllSimulationParameters(std::vector<std::map<std::string, std::string>>& records);
+
+    /**
      * @brief Updates simulation parameters in the SimulationConfigs table.
      * @param ConfigID The configuration ID to update.
      * @param parameters Map of parameter names and values to update.
@@ -89,6 +97,13 @@ public:
      * @return True if the liquid was found and loaded, false otherwise.
      */
     bool loadLiquidType(int liquidID, std::map<std::string, std::string>& liquidData);
+
+    /**
+     * @brief Loads all liquid types from the TypesOfLiquids table.
+     * @param records Vector to be filled with maps of liquid property names and values for each liquid type.
+     * @return True if the operation was successful, false otherwise.
+	 */
+    bool loadAllLiquidTypes(std::vector<std::map<std::string, std::string>>& records);
 
     /**
      * @brief Updates a liquid type in the TypesOfLiquids table.
@@ -130,12 +145,41 @@ public:
     bool loadSimulation(int simulationID, std::map<std::string, std::string>& simulationData);
 
     /**
+     * @brief Loads all simulation results from the SavedSimulations table.
+     * @param records Vector to be filled with maps of simulation property names and values for each simulation.
+     * @return True if the operation was successful, false otherwise.
+	 */
+    bool loadAllSimulations(std::vector<std::map<std::string, std::string>>& records);
+
+    /**
      * @brief Updates a simulation result in the SavedSimulations table.
      * @param simulationID The ID of the simulation to update.
      * @param simulationData Map of property names and values to update.
      * @return True if the update was successful, false otherwise.
      */
     bool updateSimulation(int simulationID, std::map<std::string, std::string>& simulationData);
+
+    /**
+     * @brief Checks if the database is open.
+     * @return True if the database is open, false otherwise.
+	 */
+    const char* lastError() const { return db ? sqlite3_errmsg(db) : "No DB connection"; }
+
+	// --- General Query Methods ---
+
+    /**
+     * @brief Queries a table in the database.
+     * @param tableName Name of the table to query.
+     * @param columns List of column names to retrieve.
+     * @param filters Map of column names and their filter values (e.g., {"Name": "Water"}).
+     * @param results Vector to be filled with maps of column names and their values for each row.
+     * @return True if the query was successful, false otherwise.
+	 */
+    bool queryTable(
+        const std::string& tableName,
+        const std::vector<std::string>& columns,
+        const std::map<std::string, std::string>& filters,
+        std::vector<std::map<std::string, std::string>>& results);
 
 private:
     std::string path; ///< Path to the SQLite database file.
