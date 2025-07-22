@@ -2,19 +2,40 @@
 // Microsoft Visual C++ generated include file.
 // Used by FluidSim.rc
 
+// String IDs
 #define IDS_APP_TITLE			103
 
+// Resource IDs
 #define IDR_MAINFRAME			128
+
+// SQL IDs
 #define SCHEMA_SQL				101
-#define IDD_FLUIDSIM_DIALOG		102
-#define IDD_ABOUTBOX			103
-#define IDM_ABOUT				104
-#define IDM_EXIT				105
-#define IDI_FLUIDSIM			107
-#define IDI_SMALL				108
-#define IDC_FLUIDSIM			109
+
+// Dialog IDs
+#define IDD_FLUIDSIM_DIALOG		1002
+#define IDD_ABOUTBOX			1003
+
+// Menu IDs
+#define IDM_ABOUT				1101
+#define IDM_EXIT				1102
+#define IDM_DATABASE			1103
+#define IDM_HOME				1104
+#define IDM_SETTINGS			1105
+
+#define IDM_TOOLBAR_HOME			1201
+#define IDM_TOOLBAR_DATABASE		1202
+
+// Icon IDs
+#define IDI_FLUIDSIMGUI			2001
+#define IDI_SMALL				2002
+#define IDI_HOME				2003
+#define IDI_DATABASE			2004
+
+// Control IDs
+#define IDC_FLUIDSIMGUI			109
 #define IDC_VERSION_TEXT			110
 #define IDC_MYICON				2
+
 #ifndef IDC_STATIC
 #define IDC_STATIC				-1
 #endif

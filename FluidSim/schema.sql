@@ -9,8 +9,8 @@ CREATE TABLE IF NOT EXISTS TypesOfLiquids (
     OtherPhysicalPropertiesJSON TEXT -- JSON package
 );
 
--- Standard Simulation Configurations
-CREATE TABLE IF NOT EXISTS StandardSimulationConfigs (
+-- Simulation Configurations
+CREATE TABLE IF NOT EXISTS SimulationConfigs (
     ConfigID INTEGER PRIMARY KEY,
     Name TEXT NOT NULL,
     GridSize TEXT,
@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS StandardSimulationConfigs (
     MethodOfComputation TEXT,
     FluidID INTEGER,
     Description TEXT,
+    IsStandard INTEGER DEFAULT 0,  -- 0 = not standard, 1 = standard
     OtherParamsJSON TEXT,    -- JSON package
     FOREIGN KEY (FluidID) REFERENCES TypesOfLiquids(LiquidID)
 );

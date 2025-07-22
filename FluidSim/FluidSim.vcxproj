@@ -127,8 +127,12 @@
     <ClInclude Include="FluidGrid.h" />
     <ClInclude Include="FluidParticle.h" />
     <ClInclude Include="FluidSim.h" />
+    <ClInclude Include="FluidSimGUI.h" />
     <ClInclude Include="FluidSolver.h" />
     <ClInclude Include="framework.h" />
+    <ClInclude Include="Page.h" />
+    <ClInclude Include="PGDatabase.h" />
+    <ClInclude Include="PGHome.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="sqlite3.h" />
     <ClInclude Include="targetver.h" />
@@ -138,17 +142,25 @@
     <ClCompile Include="FluidGrid.cpp" />
     <ClCompile Include="FluidParticle.cpp" />
     <ClCompile Include="FluidSim.cpp" />
+    <ClCompile Include="FluidSimGUI.cpp" />
     <ClCompile Include="FluidSolver.cpp" />
+    <ClCompile Include="PGDatabase.cpp" />
+    <ClCompile Include="PGHome.cpp" />
     <ClCompile Include="sqlite3.c" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="FluidSim.rc" />
+    <ResourceCompile Include="FluidSimGUI.rc" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="database.ico" />
     <Image Include="FluidSim.ico" />
+    <Image Include="home.ico" />
     <Image Include="small.ico" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="app.manifest" />
+    <None Include="database.svg" />
+    <None Include="home.svg" />
     <None Include="schema.sql" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
