@@ -6,6 +6,8 @@
 #include "Resource.h"
 
 #pragma comment(lib, "comctl32.lib")
+#pragma comment(lib, "uxtheme.lib")
+#pragma comment(lib, "dwmapi.lib")
 
 #define MAX_LOADSTRING 100
 
@@ -15,6 +17,8 @@ WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // The main window class name
 HWND g_hToolbar = nullptr;                      // Toolbar (ribbon) handle
 Page* g_currentPage = nullptr;                  // Pointer to the current page
+
+ColorMode g_colorMode = ColorMode::Light;
 
 // Forward declarations
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -113,12 +117,12 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
     wcex.cbClsExtra = 0;
     wcex.cbWndExtra = 0;
     wcex.hInstance = hInstance;
-    wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_FLUIDSIMGUI));
+    wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_FLUIDSIMGUI_STD));
     wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
     wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
     wcex.lpszMenuName = MAKEINTRESOURCEW(IDC_FLUIDSIMGUI);
     wcex.lpszClassName = szWindowClass;
-    wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
+    wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_FLUIDSIMGUI_STD));
     return RegisterClassExW(&wcex);
 }
 
@@ -131,6 +135,9 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
     HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
         CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
+
+	// ApplyColorMode is a function that applies the current color mode to the window.
+    ApplyColorMode(hWnd);
 
     // Set the default page to Home
     g_currentPage = CreatePGHome();
@@ -148,9 +155,9 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
     if (g_hToolbar) {
         // Create image list for toolbar icons
         HIMAGELIST hImageList = ImageList_Create(32, 32, ILC_COLOR32 | ILC_MASK, 1, 1);
-        HICON hIconHome = (HICON)LoadImage(hInst, MAKEINTRESOURCE(IDI_HOME), IMAGE_ICON, 32, 32, LR_DEFAULTCOLOR | LR_CREATEDIBSECTION);
+        HICON hIconHome = (HICON)LoadImage(hInst, MAKEINTRESOURCE(IDI_HOME_STD), IMAGE_ICON, 32, 32, LR_DEFAULTCOLOR | LR_CREATEDIBSECTION);
         ImageList_AddIcon(hImageList, hIconHome);
-        HICON hIconDatabase = (HICON)LoadImage(hInst, MAKEINTRESOURCE(IDI_DATABASE), IMAGE_ICON, 32, 32, LR_DEFAULTCOLOR | LR_CREATEDIBSECTION);
+        HICON hIconDatabase = (HICON)LoadImage(hInst, MAKEINTRESOURCE(IDI_DATABASE_STD), IMAGE_ICON, 32, 32, LR_DEFAULTCOLOR | LR_CREATEDIBSECTION);
         ImageList_AddIcon(hImageList, hIconDatabase);
         SendMessage(g_hToolbar, TB_SETIMAGELIST, 0, (LPARAM)hImageList);
 
@@ -201,6 +208,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             break;
         case IDM_EXIT:
             DestroyWindow(hWnd);
+            break;
+        case IDM_SETTINGS:
+            if (DialogBox(hInst, MAKEINTRESOURCE(IDD_SETTINGSBOX), hWnd, SettingsDlgProc) == IDOK) {
+                ApplyColorMode(hWnd);
+            }
             break;
         case IDM_HOME:
         case IDM_TOOLBAR_HOME:
@@ -297,4 +309,56 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
         break;
     }
     return (INT_PTR)FALSE;
+}
+
+/**
+ * @brief Dialog procedure for the Settings dialog.
+ *        Allows the user to select between Light and Dark color modes.
+ */
+INT_PTR CALLBACK SettingsDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    switch (message)
+    {
+    case WM_INITDIALOG:
+        // Set radio based on current mode
+        CheckRadioButton(hDlg, IDC_RADIO_LIGHT, IDC_RADIO_DARK,
+            g_colorMode == ColorMode::Dark ? IDC_RADIO_DARK : IDC_RADIO_LIGHT);
+        return (INT_PTR)TRUE;
+    case WM_COMMAND:
+        switch (LOWORD(wParam))
+        {
+        case IDOK:
+            g_colorMode = IsDlgButtonChecked(hDlg, IDC_RADIO_DARK) ? ColorMode::Dark : ColorMode::Light;
+            EndDialog(hDlg, IDOK);
+            return (INT_PTR)TRUE;
+        case IDCANCEL:
+            EndDialog(hDlg, IDCANCEL);
+            return (INT_PTR)TRUE;
+        }
+        break;
+    }
+    return (INT_PTR)FALSE;
+}
+
+/**
+ * @brief Applies the selected color mode to the main window and its controls.
+ *        Sets dark mode attributes, changes icons, and updates the theme.
+ */
+void ApplyColorMode(HWND hWnd)
+{
+    BOOL dark = (g_colorMode == ColorMode::Dark);
+    // Set dark title bar (Windows 10 1809+)
+    const DWORD DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
+    DwmSetWindowAttribute(hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &dark, sizeof(dark));
+    // Set dark theme for controls (optional, for child controls)
+    SetWindowTheme(hWnd, dark ? L"DarkMode_Explorer" : L"", nullptr);
+
+    // Change icon if you have different icons for each mode
+    int iconId = dark ? IDI_FLUIDSIMGUI_INV : IDI_FLUIDSIMGUI_STD;
+    HICON hIcon = LoadIcon(hInst, MAKEINTRESOURCE(iconId));
+    SendMessage(hWnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+    SendMessage(hWnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
+
+    // Optionally, force a redraw
+    InvalidateRect(hWnd, nullptr, TRUE);
 }

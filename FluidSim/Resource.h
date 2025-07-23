@@ -14,6 +14,7 @@
 // Dialog IDs
 #define IDD_FLUIDSIM_DIALOG		1002
 #define IDD_ABOUTBOX			1003
+#define IDD_SETTINGSBOX         1004
 
 // Menu IDs
 #define IDM_ABOUT				1101
@@ -26,15 +27,20 @@
 #define IDM_TOOLBAR_DATABASE		1202
 
 // Icon IDs
-#define IDI_FLUIDSIMGUI			2001
+#define IDI_FLUIDSIMGUI_STD		2001
+#define IDI_FLUIDSIMGUI_INV		2101
 #define IDI_SMALL				2002
-#define IDI_HOME				2003
-#define IDI_DATABASE			2004
+#define IDI_HOME_STD			2003
+#define IDI_HOME_INV			2103
+#define IDI_DATABASE_STD		2004
+#define IDI_DATABASE_INV		2104
 
 // Control IDs
 #define IDC_FLUIDSIMGUI			109
 #define IDC_VERSION_TEXT			110
 #define IDC_MYICON				2
+#define IDC_RADIO_LIGHT         2005
+#define IDC_RADIO_DARK          2006
 
 #ifndef IDC_STATIC
 #define IDC_STATIC				-1
