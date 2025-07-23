@@ -149,19 +149,23 @@
     <ClCompile Include="sqlite3.c" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="FluidSimGUI.rc" />
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="database.ico" />
-    <Image Include="FluidSim.ico" />
-    <Image Include="home.ico" />
-    <Image Include="small.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="app.manifest" />
-    <None Include="database.svg" />
-    <None Include="home.svg" />
     <None Include="schema.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="resources\images\ico\database.ico" />
+    <Image Include="resources\images\ico\FluidSim.ico" />
+    <Image Include="resources\images\ico\home.ico" />
+    <Image Include="resources\images\ico\invdatabase.ico" />
+    <Image Include="resources\images\ico\invhome.ico" />
+    <Image Include="resources\images\ico\invliquid.ico" />
+    <Image Include="resources\images\ico\liquid.ico" />
+    <Image Include="resources\images\ico\small.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="resources\FluidSimGUI.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Manifest Include="resources\app.manifest" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

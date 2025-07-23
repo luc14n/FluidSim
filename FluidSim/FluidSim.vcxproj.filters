@@ -106,36 +106,44 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="FluidSimGUI.rc">
+    <None Include="schema.sql">
+      <Filter>SQLFiles</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="resources\images\ico\database.ico">
+      <Filter>Resource Files\Icons</Filter>
+    </Image>
+    <Image Include="resources\images\ico\FluidSim.ico">
+      <Filter>Resource Files\Icons</Filter>
+    </Image>
+    <Image Include="resources\images\ico\home.ico">
+      <Filter>Resource Files\Icons</Filter>
+    </Image>
+    <Image Include="resources\images\ico\invdatabase.ico">
+      <Filter>Resource Files\Icons</Filter>
+    </Image>
+    <Image Include="resources\images\ico\invhome.ico">
+      <Filter>Resource Files\Icons</Filter>
+    </Image>
+    <Image Include="resources\images\ico\invliquid.ico">
+      <Filter>Resource Files\Icons</Filter>
+    </Image>
+    <Image Include="resources\images\ico\liquid.ico">
+      <Filter>Resource Files\Icons</Filter>
+    </Image>
+    <Image Include="resources\images\ico\small.ico">
+      <Filter>Resource Files\Icons</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="resources\FluidSimGUI.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="database.ico">
-      <Filter>Resource Files\Icons</Filter>
-    </Image>
-    <Image Include="FluidSim.ico">
-      <Filter>Resource Files\Icons</Filter>
-    </Image>
-    <Image Include="home.ico">
-      <Filter>Resource Files\Icons</Filter>
-    </Image>
-    <Image Include="small.ico">
-      <Filter>Resource Files\Icons</Filter>
-    </Image>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="schema.sql">
-      <Filter>SQLFiles</Filter>
-    </None>
-    <None Include="app.manifest">
+    <Manifest Include="resources\app.manifest">
       <Filter>Resource Files</Filter>
-    </None>
-    <None Include="home.svg">
-      <Filter>Resource Files\Icons</Filter>
-    </None>
-    <None Include="database.svg">
-      <Filter>Resource Files\Icons</Filter>
-    </None>
+    </Manifest>
   </ItemGroup>
 </Project>

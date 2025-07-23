@@ -148,9 +148,9 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
     if (g_hToolbar) {
         // Create image list for toolbar icons
         HIMAGELIST hImageList = ImageList_Create(32, 32, ILC_COLOR32 | ILC_MASK, 1, 1);
-        HICON hIconHome = (HICON)LoadImage(hInst, MAKEINTRESOURCE(IDI_HOME), IMAGE_ICON, 32, 32, LR_DEFAULTCOLOR);
+        HICON hIconHome = (HICON)LoadImage(hInst, MAKEINTRESOURCE(IDI_HOME), IMAGE_ICON, 32, 32, LR_DEFAULTCOLOR | LR_CREATEDIBSECTION);
         ImageList_AddIcon(hImageList, hIconHome);
-        HICON hIconDatabase = (HICON)LoadImage(hInst, MAKEINTRESOURCE(IDI_DATABASE), IMAGE_ICON, 32, 32, LR_DEFAULTCOLOR);
+        HICON hIconDatabase = (HICON)LoadImage(hInst, MAKEINTRESOURCE(IDI_DATABASE), IMAGE_ICON, 32, 32, LR_DEFAULTCOLOR | LR_CREATEDIBSECTION);
         ImageList_AddIcon(hImageList, hIconDatabase);
         SendMessage(g_hToolbar, TB_SETIMAGELIST, 0, (LPARAM)hImageList);
 
