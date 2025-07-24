@@ -1,4 +1,5 @@
 #include "Page.h"
+#include "Resource.h"
 #include "FluidDatabase.h"
 #include <string>
 #include <map>
@@ -8,13 +9,17 @@
 #include <CommCtrl.h>
 
 // Control IDs for the database page
-#define IDC_BTN_LIQUIDS     2010
-#define IDC_BTN_CONFIGS     2011
-#define IDC_BTN_SIMS        2012
-#define IDC_BTN_SAVE        2020
-#define IDC_BTN_LOAD        2021
-#define IDC_BTN_UPDATE      2022
-#define IDC_BTN_QUERY       2023
+// Buttons
+#define IDC_BTN_LIQUIDS     3101
+#define IDC_BTN_CONFIGS     3102
+#define IDC_BTN_SIMS        3103
+#define IDC_BTN_SAVE        3104
+#define IDC_BTN_LOAD        3105
+#define IDC_BTN_UPDATE      3106
+#define IDC_BTN_QUERY       3107
+// Displays
+#define IDC_LABEL_TABLE     3301
+// Other
 #define MAX_COLUMNS 16
 
 /**
@@ -88,25 +93,25 @@ public:
         
         // Table selection buttons
         hBtnLiquids = CreateWindowW(L"BUTTON", L"Liquids", WS_TABSTOP | WS_VISIBLE | WS_CHILD,
-            20, 60, 100, 30, hWnd, (HMENU)IDC_BTN_LIQUIDS, hInst, nullptr);
+            20, 70, 100, 30, hWnd, (HMENU)IDC_BTN_LIQUIDS, hInst, nullptr);
         hBtnConfigs = CreateWindowW(L"BUTTON", L"Configs", WS_TABSTOP | WS_VISIBLE | WS_CHILD,
-            130, 60, 100, 30, hWnd, (HMENU)IDC_BTN_CONFIGS, hInst, nullptr);
+            130, 70, 100, 30, hWnd, (HMENU)IDC_BTN_CONFIGS, hInst, nullptr);
         hBtnSims = CreateWindowW(L"BUTTON", L"Simulations", WS_TABSTOP | WS_VISIBLE | WS_CHILD,
-            240, 60, 120, 30, hWnd, (HMENU)IDC_BTN_SIMS, hInst, nullptr);
+            240, 70, 120, 30, hWnd, (HMENU)IDC_BTN_SIMS, hInst, nullptr);
 
         // Label to show which table is selected
         hLabelTable = CreateWindowW(L"STATIC", L"Liquids", WS_VISIBLE | WS_CHILD | SS_CENTER,
-            380, 60, 100, 30, hWnd, nullptr, hInst, nullptr);
+            380, 70, 100, 30, hWnd, nullptr, hInst, nullptr);
 
         // Action buttons
         hBtnSave = CreateWindowW(L"BUTTON", L"Save", WS_TABSTOP | WS_VISIBLE | WS_CHILD,
-            20, 100, 80, 30, hWnd, (HMENU)IDC_BTN_SAVE, hInst, nullptr);
+            20, 110, 80, 30, hWnd, (HMENU)IDC_BTN_SAVE, hInst, nullptr);
         hBtnLoad = CreateWindowW(L"BUTTON", L"Load", WS_TABSTOP | WS_VISIBLE | WS_CHILD,
-            110, 100, 80, 30, hWnd, (HMENU)IDC_BTN_LOAD, hInst, nullptr);
+            110, 110, 80, 30, hWnd, (HMENU)IDC_BTN_LOAD, hInst, nullptr);
         hBtnUpdate = CreateWindowW(L"BUTTON", L"Update", WS_TABSTOP | WS_VISIBLE | WS_CHILD,
-            200, 100, 80, 30, hWnd, (HMENU)IDC_BTN_UPDATE, hInst, nullptr);
+            200, 110, 80, 30, hWnd, (HMENU)IDC_BTN_UPDATE, hInst, nullptr);
         hBtnQuery = CreateWindowW(L"BUTTON", L"Query", WS_TABSTOP | WS_VISIBLE | WS_CHILD,
-            290, 100, 80, 30, hWnd, (HMENU)IDC_BTN_QUERY, hInst, nullptr);
+            290, 110, 80, 30, hWnd, (HMENU)IDC_BTN_QUERY, hInst, nullptr);
 
         // Show Liquids table fields by default
         selectedTable = 0;

@@ -23,8 +23,8 @@
 #define IDM_HOME				1104
 #define IDM_SETTINGS			1105
 
-#define IDM_TOOLBAR_HOME			1201
-#define IDM_TOOLBAR_DATABASE		1202
+#define IDM_TOOLBAR_HOME		1201
+#define IDM_TOOLBAR_DATABASE	1202
 
 // Icon IDs
 #define IDI_FLUIDSIMGUI_STD		2001
@@ -39,8 +39,17 @@
 #define IDC_FLUIDSIMGUI			109
 #define IDC_VERSION_TEXT			110
 #define IDC_MYICON				2
-#define IDC_RADIO_LIGHT         2005
-#define IDC_RADIO_DARK          2006
+
+#define IDC_RADIO_LIGHT         3005
+#define IDC_RADIO_DARK          3006
+#define IDC_LABEL_TITLE			3100 // 3100s for all Labels to be colored correctly
+#define IDC_LABEL_TITLE_MAX		3199
+#define IDC_LABEL_BTTN			3200 // 3200s for all Labels to be colored correctly
+#define IDC_LABEL_BTTN_MAX		3299
+#define IDC_LABEL_DISP			3300 // 3300s for all Labels to be colored correctly
+#define IDC_LABEL_DISP_MAX		3399
+#define IDC_LABEL_NOCLR			3400 // 3400s for all Labels to be colored correctly
+#define IDC_LABEL_NOCLR_MAX		2499
 
 #ifndef IDC_STATIC
 #define IDC_STATIC				-1

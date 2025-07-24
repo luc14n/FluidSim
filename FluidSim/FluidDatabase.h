@@ -5,6 +5,8 @@
 #include <iostream>
 #include <vector>
 
+using namespace std;
+
 /**
  * @brief Handles all database operations for the FluidSim application.
  *
@@ -20,7 +22,7 @@ public:
      * @brief Constructs a FluidDatabase object with the given database file path.
      * @param dbPath Path to the SQLite database file.
      */
-    FluidDatabase(const std::string& dbPath);
+    FluidDatabase(const string& dbPath);
 
     /**
      * @brief Destructor. Closes the database connection if open.
@@ -47,7 +49,7 @@ public:
      * @param parameters Map of parameter names and values (see schema for required keys).
      * @return True if the operation was successful, false otherwise.
      */
-    bool saveSimulationParameters(const std::map<std::string, std::string>& parameters);
+    bool saveSimulationParameters(const map<string, string>& parameters);
 
     /**
      * @brief Loads simulation parameters from the SimulationConfigs table.
@@ -55,14 +57,14 @@ public:
      * @param parameters Map to be filled with parameter names and values.
      * @return True if the configuration was found and loaded, false otherwise.
      */
-    bool loadSimulationParameters(const int ConfigID, std::map<std::string, std::string>& parameters);
+    bool loadSimulationParameters(const int ConfigID, map<string, string>& parameters);
 
     /**
      * @brief Loads all simulation configurations from the SimulationConfigs table.
      * @param records Vector to be filled with maps of parameter names and values for each configuration.
      * @return True if the operation was successful, false otherwise.
      */
-    bool loadAllSimulationParameters(std::vector<std::map<std::string, std::string>>& records);
+    bool loadAllSimulationParameters(vector<map<string, string>>& records);
 
     /**
      * @brief Updates simulation parameters in the SimulationConfigs table.
@@ -70,7 +72,7 @@ public:
      * @param parameters Map of parameter names and values to update.
      * @return True if the update was successful, false otherwise.
      */
-    bool updateSimulationParameters(const int ConfigID, std::map<std::string, std::string>& parameters);
+    bool updateSimulationParameters(const int ConfigID, map<string, string>& parameters);
 
     // --- TypesOfLiquids table ---
 
@@ -86,9 +88,9 @@ public:
      * @param otherPhysicalPropertiesJSON Additional properties in JSON format.
      * @return True if the operation was successful, false otherwise.
      */
-    bool saveLiquidType(const std::string& liquidID, const std::string& name, double density, double viscosity,
-        const std::string& color, const std::string& description,
-        const std::string& otherPhysicalPropertiesJSON);
+    bool saveLiquidType(const string& liquidID, const string& name, double density, double viscosity,
+        const string& color, const string& description,
+        const string& otherPhysicalPropertiesJSON);
 
     /**
      * @brief Loads a liquid type from the TypesOfLiquids table.
@@ -96,14 +98,14 @@ public:
      * @param liquidData Map to be filled with liquid property names and values.
      * @return True if the liquid was found and loaded, false otherwise.
      */
-    bool loadLiquidType(int liquidID, std::map<std::string, std::string>& liquidData);
+    bool loadLiquidType(int liquidID, map<string, string>& liquidData);
 
     /**
      * @brief Loads all liquid types from the TypesOfLiquids table.
      * @param records Vector to be filled with maps of liquid property names and values for each liquid type.
      * @return True if the operation was successful, false otherwise.
 	 */
-    bool loadAllLiquidTypes(std::vector<std::map<std::string, std::string>>& records);
+    bool loadAllLiquidTypes(vector<map<string, string>>& records);
 
     /**
      * @brief Updates a liquid type in the TypesOfLiquids table.
@@ -111,7 +113,7 @@ public:
      * @param liquidData Map of property names and values to update.
      * @return True if the update was successful, false otherwise.
      */
-    bool updateLiquidType(int liquidID, std::map<std::string, std::string>& liquidData);
+    bool updateLiquidType(int liquidID, map<string, string>& liquidData);
 
     // --- SavedSimulations table ---
 
@@ -130,11 +132,11 @@ public:
      * @param otherMetadataJSON Additional metadata in JSON format.
      * @return True if the operation was successful, false otherwise.
      */
-    bool saveSimulation(const int simulationID, const int configID, const std::string& dateTime,
-        const std::string& resultFilePath, double duration,
-        const std::string& notes, const std::string& user,
-        int seed, const std::string& version,
-        const std::string& otherMetadataJSON);
+    bool saveSimulation(const int simulationID, const int configID, const string& dateTime,
+        const string& resultFilePath, double duration,
+        const string& notes, const string& user,
+        int seed, const string& version,
+        const string& otherMetadataJSON);
 
     /**
      * @brief Loads a simulation result from the SavedSimulations table.
@@ -142,14 +144,14 @@ public:
      * @param simulationData Map to be filled with simulation property names and values.
      * @return True if the simulation was found and loaded, false otherwise.
      */
-    bool loadSimulation(int simulationID, std::map<std::string, std::string>& simulationData);
+    bool loadSimulation(int simulationID, map<string, string>& simulationData);
 
     /**
      * @brief Loads all simulation results from the SavedSimulations table.
      * @param records Vector to be filled with maps of simulation property names and values for each simulation.
      * @return True if the operation was successful, false otherwise.
 	 */
-    bool loadAllSimulations(std::vector<std::map<std::string, std::string>>& records);
+    bool loadAllSimulations(vector<map<string, string>>& records);
 
     /**
      * @brief Updates a simulation result in the SavedSimulations table.
@@ -157,7 +159,7 @@ public:
      * @param simulationData Map of property names and values to update.
      * @return True if the update was successful, false otherwise.
      */
-    bool updateSimulation(int simulationID, std::map<std::string, std::string>& simulationData);
+    bool updateSimulation(int simulationID, map<string, string>& simulationData);
 
     /**
      * @brief Checks if the database is open.
@@ -176,13 +178,13 @@ public:
      * @return True if the query was successful, false otherwise.
 	 */
     bool queryTable(
-        const std::string& tableName,
-        const std::vector<std::string>& columns,
-        const std::map<std::string, std::string>& filters,
-        std::vector<std::map<std::string, std::string>>& results);
+        const string& tableName,
+        const vector<string>& columns,
+        const map<string, string>& filters,
+        vector<map<string, string>>& results);
 
 private:
-    std::string path; ///< Path to the SQLite database file.
+    string path; ///< Path to the SQLite database file.
     sqlite3* db;      ///< SQLite database connection handle.
 
     /**

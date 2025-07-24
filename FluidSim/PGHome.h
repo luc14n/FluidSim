@@ -14,6 +14,11 @@ public:
     PGHome();
 
     /**
+     * @brief Destructor.
+     */
+    ~PGHome() override;
+
+    /**
      * @brief Creates and shows all controls for the home page.
      * @param hWnd Parent window handle.
      * @param hInst Application instance handle.
